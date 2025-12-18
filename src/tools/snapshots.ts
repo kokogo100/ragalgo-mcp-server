@@ -1,0 +1,46 @@
+/**
+ * 스냅샷 관련 MCP Tools
+ */
+
+import { z } from 'zod';
+import { callApi } from '../utils/api.js';
+
+// 스냅샷 파라미터 스키마
+export const SnapshotsParamsSchema = z.object({
+    tag_code: z.string().optional().describe('태그 코드 (예: STK005930)'),
+    date: z.string().optional().describe('날짜 (YYYY-MM-DD)'),
+    days: z.number().min(1).max(30).default(7).describe('최근 N일 (기본: 7)'),
+    limit: z.number().min(1).max(100).default(50).describe('결과 수'),
+    offset: z.number().min(0).default(0).describe('페이지네이션 오프셋'),
+});
+
+export type SnapshotsParams = z.infer<typeof SnapshotsParamsSchema>;
+
+// 스냅샷 조회
+export async function getSnapshots(params: SnapshotsParams) {
+    const endpoint = params.tag_code ? \`snapshots/\${params.tag_code}\` : 'snapshots';
+    const { tag_code, ...queryParams } = params;
+
+    const result = await callApi<{
+        success: boolean;
+        data: Array<{
+            tag_code: string;
+            snapshot_date: string;
+            news_count: number;
+            news_avg_score: number;
+            news_max_score: number;
+            news_min_score: number;
+            news_bullish_count: number;
+            news_bearish_count: number;
+            news_neutral_count: number;
+            research_count?: number;        // Added
+            research_outlook?: string;      // Added
+            chart_score: number;
+            chart_zone: string;
+            last_price: number;
+        }>;
+        meta: { count: number; date?: string; days?: number };
+    }>(endpoint, queryParams);
+
+    return result;
+}
