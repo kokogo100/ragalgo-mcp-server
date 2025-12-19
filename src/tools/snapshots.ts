@@ -23,8 +23,12 @@ export type SnapshotsParams = z.infer<typeof SnapshotsParamsSchema>;
 // 1. Fetch 'yesterday's snapshot for context.
 // 2. Call 'get_news_scored' to get REAL-TIME news for the current day.
 export async function getSnapshots(params: SnapshotsParams) {
-    const endpoint = params.tag_code ? `snapshots/${params.tag_code}` : 'snapshots';
+    const endpoint = 'snapshots';
     const { tag_code, ...queryParams } = params;
+    // 태그 코드가 있으면 쿼리 파라미터에 추가
+    if (tag_code) {
+        (queryParams as any).tag_code = tag_code;
+    }
 
     const result = await callApi<{
         success: boolean;
