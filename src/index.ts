@@ -406,10 +406,9 @@ Returns: matched tags with confidence scores`,
             app.get('/sse', async (req, res) => {
                 // FIX: Disable buffering for Railway/Nginx proxies to allow real-time SSE
                 res.setHeader('X-Accel-Buffering', 'no');
-                res.setHeader('Content-Type', 'text/event-stream');
-                res.setHeader('Cache-Control', 'no-cache');
-                res.setHeader('Connection', 'keep-alive');
-                res.flushHeaders(); // Flush headers immediately
+                // Content-Type, Cache-Control, Connection are handled by SSEServerTransport or setting them here is fine, 
+                // but flushHeaders() commits the response too early, causing the SDK to fail when it tries to write headers.
+                // res.flushHeaders(); <--- REMOVED due to ERR_HTTP_HEADERS_SENT
 
                 console.log('New SSE connection initiated');
                 const transport = new SSEServerTransport('/messages', res);
