@@ -28,6 +28,15 @@ async function main() {
     try {
         console.error('Initializing Server...');
 
+        // CHECK API KEY: Warn but do not crash
+        if (!process.env.RAGALGO_API_KEY) {
+            console.error('⚠️  WARNING: RAGALGO_API_KEY is not set in environment variables.');
+            console.error('⚠️  Tools requiring API calls (news, chart, etc.) will fail when called.');
+            console.error('⚠️  However, server will continue to start for Smithery health check.');
+        } else {
+            console.error('✅ RAGALGO_API_KEY is detected (masked):', process.env.RAGALGO_API_KEY.substring(0, 5) + '...');
+        }
+
         // DYNAMIC IMPORTS: Load tools only after main starts
         // This isolates import errors to the try-catch block
         const { getNews, getNewsScored, NewsParamsSchema, NewsScoredParamsSchema } = await import('./tools/news.js');
