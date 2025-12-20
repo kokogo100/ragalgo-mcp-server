@@ -1,0 +1,7 @@
+runtime: container
+build:
+  dockerfile: Dockerfile
+  context: .
+startCommand:
+  type: stdio
+  command: ["node", "/app/dist/index.js"]
