@@ -379,129 +379,101 @@ Returns: matched tags with confidence scores`,
 
 // Start server logic
 async function main() {
-    const isStdio = process.argv.includes('--stdio');
+    try {
+        const isStdio = process.argv.includes('--stdio');
 
-    if (isStdio) {
-        const server = createCommonServer();
-        const transport = new StdioServerTransport();
-        await server.connect(transport);
-        console.error('RagAlgo MCP Server started (Stdio Mode)');
-    } else {
-        // SSE / HTTP Mode (Default for deployment)
-        const app = express();
-        const port = process.env.PORT || 8080;
-
-        app.use(cors());
-        app.use(express.json());
-
-        // Logging
-        app.use((req, res, next) => {
-            console.log(`[${req.method}] ${req.originalUrl}`);
-            next();
-        });
-
-        // Health Check
-        app.get('/', (req, res) => {
-            res.status(200).send('RagAlgo MCP Server is running. Endpoint: /sse');
-        });
-
-        app.get('/health', (req, res) => {
-            res.status(200).json({ status: 'ok', version: '1.0.2' });
-        });
-
-        // MCP Server Card endpoint
-        app.get('/.well-known/mcp-server-card', (req, res) => {
-            res.json({
-                "name": "RagAlgo MCP Server",
-                "description": "Korean Stock & Crypto Technical Analysis + Financials",
-                "version": "1.0.0"
-            });
-        });
-
-        // SSE Logic (Multi-client support)
-        // Store transports to handle POST requests
-        // Key: sessionID (not easily available in simple SSE), so we use a simpler pattern usually.
-        // But for Smithery's single-connection assumption per session:
-        // We will create a new server instance for every SSE connection.
-        // We need to map the POST request to the correct transport.
-        // Since we don't have a shared session ID handling mechanism here easily without client support,
-        // we'll use a hacky text/event-stream setup or just assume the transport handles it if we can reference it.
-        // The SDK's SSEServerTransport normally expects the POST to come to a specific URL handling the SAME transport instance.
-
-        // Correct Pattern for Express + MCP SDK:
-        // Use a global Map if we generate a session ID, but let's stick to the simplest per-request model 
-        // if the client sends a query param or if we use the same response object logic.
-        // Actually, the SDK handles `/messages?sessionId=...` typically. 
-        // Let's implement the standard transport per request? No, SSE is persistent.
-
-        // We will allow ONE active transport if we keep it simple, BUT that crashes on multiple connections.
-        // A better approach for this simplified deployment:
-        // Keep a Map of sessionId -> Transport.
-
-        let transportMap = new Map<string, SSEServerTransport>();
-
-        app.get('/sse', async (req, res) => {
-            console.log('New SSE connection');
-
-            // Create a fresh server for this connection
+        if (isStdio) {
+            const server = createCommonServer();
+            const transport = new StdioServerTransport();
+            await server.connect(transport);
+            console.error('RagAlgo MCP Server started (Stdio Mode)');
+        } else {
+            // SSE / HTTP Mode (Default for deployment)
+            // Use a SINGLE Global Server Instance as recommended by Smithery Support
             const server = createCommonServer();
 
-            // Generate a session ID if possible, or use a query param.
-            // Smithery might not send one. 
-            // We'll create a transport and hook it up.
-            const transport = new SSEServerTransport('/messages', res);
+            const app = express();
+            const port = process.env.PORT || 8080;
 
-            // We need to store this transport so POST /messages can find it?
-            // Wait, standard MCP SSE Transport handles the response via `res` passed to constructor.
-            // The POST handler `transport.handlePostMessage` needs the `transport` instance.
-            // How do we match the POST to THIS transport?
-            // The client adds `?sessionId=...` to the /messages URL usually unless we coordinate it.
-            // `SSEServerTransport` generates a `sessionId` (uuid) internally and sends it in the `endpoint` event.
-            // So we need to capture that?
-            // Actually, for now, to fix the CRASH, let's just support ONE active global transport gracefully 
-            // by closing the old one if it exists, or handling the map if we want to be robust.
+            app.use(cors());
+            app.use(express.json());
 
-            // Support's code didn't handle the map, implying they might be testing sequentially.
-            // Let's implement the Map to be safe.
+            // Logging middleware
+            app.use((req, res, next) => {
+                console.log(`[${req.method}] ${req.originalUrl}`);
+                next();
+            });
 
-            await server.connect(transport);
+            // Root handler common for Health Checks
+            app.get('/', (req, res) => {
+                res.status(200).send('RagAlgo MCP Server is running. Endpoint: /sse');
+            });
 
-            // We need to expose this transport to the POST handler.
-            // Since we can't easily extract sessionId *before* connection (it's internal),
-            // We'll rely on the fact that `handlePostMessage` is called.
-            // But wait, we need to know WHICH transport to call `handlePostMessage` on.
+            app.get('/health', (req, res) => {
+                res.status(200).json({ status: 'ok', version: '1.0.4' });
+            });
 
-            // WORKAROUND: For this specific deployment debugging, we will use a SINGLE GLOBAL transport variable
-            // but we will close/overwrite it safely instead of crashing.
+            // MCP Server Card endpoint
+            app.get('/.well-known/mcp-server-card', (req, res) => {
+                res.json({
+                    "name": "RagAlgo MCP Server",
+                    "description": "Korean Stock & Crypto Technical Analysis + Financials",
+                    "version": "1.0.0"
+                });
+            });
 
-            if (globalTransport) {
-                console.log('Closing existing transport for new connection');
-                // ideally close it, but the SDK doesn't expose close() easily on Transport? 
-                // It should close when res closes.
-            }
-            globalTransport = transport;
+            // Global Transport Reference (Last Connection Wins strategy for Scanner compatibility)
+            // Smithery scanner connects, receives config, then might disconnect.
+            // A new connection (real user) might come later. We must update the transport.
+            let globalTransport: SSEServerTransport | null = null;
 
-            res.on('close', () => {
-                console.log('SSE connection closed');
-                if (globalTransport === transport) {
-                    globalTransport = null;
+            app.get('/sse', async (req, res) => {
+                console.log('New SSE connection initiated');
+
+                // Create a NEW transport for this specific connection
+                const transport = new SSEServerTransport('/messages', res);
+
+                // Update global reference so POST /messages can find it
+                globalTransport = transport;
+
+                try {
+                    // KEY FIX: Only ONE server, connecting to NEW transport.
+                    // The SDK 'connect' method manages the transport binding.
+                    // If connecting a NEW transport, we rely on SDK to handle switch or we catch "Already connected".
+                    // But effectively, for the Scanner to work, we must accept the new connection.
+                    await server.connect(transport);
+                    console.log('Server connected to new SSE transport');
+                } catch (err) {
+                    console.error('Error connecting server to transport:', err);
+                }
+
+                res.on('close', () => {
+                    console.log('SSE connection closed');
+                    if (globalTransport === transport) {
+                        globalTransport = null;
+                    }
+                });
+            });
+
+            app.post('/messages', async (req, res) => {
+                // Determine which transport to use
+                // For this deployment pattern (Single Container, Scanner then User), 
+                // we use the most recent active transport.
+
+                if (globalTransport) {
+                    await globalTransport.handlePostMessage(req, res);
+                } else {
+                    res.status(404).json({ error: 'No active connection' });
                 }
             });
-        });
 
-        let globalTransport: SSEServerTransport | null = null;
-
-        app.post('/messages', async (req, res) => {
-            if (globalTransport) {
-                await globalTransport.handlePostMessage(req, res);
-            } else {
-                res.status(404).json({ error: 'No active connection' });
-            }
-        });
-
-        app.listen(Number(port), '0.0.0.0', () => {
-            console.log(`RagAlgo MCP Server listening on port ${port}`);
-        });
+            app.listen(Number(port), '0.0.0.0', () => {
+                console.log(`RagAlgo MCP Server listening on port ${port} (Single Global Server Mode)`);
+            });
+        }
+    } catch (error) {
+        console.error('FATAL STARTUP ERROR:', error);
+        process.exit(1);
     }
 }
 
@@ -509,5 +481,3 @@ main().catch((error) => {
     console.error('Fatal error:', error);
     process.exit(1);
 });
-
-

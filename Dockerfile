@@ -16,6 +16,9 @@ COPY package*.json ./
 # Install only production dependencies
 RUN npm install --only=production
 
+# Install ca-certificates for potential SSL/external requests
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+
 COPY --from=builder /app/dist ./dist
 
 ENV PORT=8080
