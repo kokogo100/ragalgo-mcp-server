@@ -37,6 +37,12 @@ export async function getChartStock(params: ChartStockParams) {
             scores: number[];
             zone: string;
             oscillator_state: string;
+            analysis?: {          // Added specific analysis fields
+                weekly_zone: string;
+                daily_momentum: string;
+                daily_signal: string;
+            };
+            outlook?: string;     // Added outlook field
             last_price: number;
             updated_at: string;
         } | Array<{
@@ -64,6 +70,12 @@ export async function getChartCoin(params: ChartCoinParams) {
             scores: number[];
             zone: string;
             oscillator_state: string;
+            analysis?: {          // Added specific analysis fields
+                weekly_zone: string;
+                daily_momentum: string;
+                daily_signal: string;
+            };
+            outlook?: string;     // Added outlook field
             last_price: number;
             updated_at: string;
         } | Array<{

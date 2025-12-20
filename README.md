@@ -1,119 +1,73 @@
 # RagAlgo: Dynamic RAG Engine for AI Reliability
 
-> **Global Beta**: Currently specialized in **Korean Finance (Stocks & Crypto)**, but built on a universal "Tag & Score" protocol applicable to any domain.
+> **AI 신뢰성을 위한 다이내믹 RAG 엔진**
 
-RagAlgo is not just a data API. It is a **"State-of-Truth" Provider** designed to prevent LLM hallucinations when dealing with **complex static knowledge** and **highly volatile dynamic data**.
+RagAlgo는 변동성이 큰 한국 금융(주식/코인) 데이터를 **'태그(Tag)'**와 **'점수(Score)'**로 표준화하여 제공하는 **AI 전용 MCP 서버**입니다.
+여러분의 AI 에이전트가 인터넷을 헤매지 않고, 가장 효율적으로 시장의 "진실(State-of-Truth)"을 파악할 수 있도록 돕습니다.
 
-### Why RagAlgo?
-Traditional RAG (SQL/Vector DB) often fails to capture the "current context" of fast-changing reality. RagAlgo solves this by converting data into **Mathematical Scores** and **Standardized Tags**.
-
-### Core Philosophy
-1.  **Sanitized Data:** We filter out noise so AI only ingests high-quality signals.
-2.  **Mathematical Scoring:** We translate complex movements into simple scores (e.g., `Chart Score: 9.5`), giving AI a clear ground truth to reason upon.
-3.  **Universal Protocol:** Our "Tag & Score" architecture is designed to **systematize and standardize any data domain**—including Legal, Medical, and Tech—into a format that AI can flawlessly understand and judge.
-
-
-### Flexible Integration: Scored vs. Non-Scored
-We respect your freedom to build. Choose the mode that fits your pipeline:
-
-| Mode | Target User | Description |
-|------|-------------|-------------|
-| **Scored API** (AI-Ready) | Builders & Startups | RagAlgo's math engines sanitize and score everything. Zero hallucinations. |
-| **Non-Scored API** (Raw Mode) | Data Scientists & Engineers | Pure, sanitized data feeds for your custom pipelines. Perfect for fine-tuning, **n8n** automation, **LangChain** agents, or **Flowise** workflows. |
+- **핵심 기능:** KOSPI/KOSDAQ 및 업비트(Upbit) 기반의 실시간 차트 점수, 뉴스 감정 분석
+- **무료 테스트:** 지금 바로 설치하여 **1,000회 무료 호출**로 충분히 테스트해보세요.
+- **상세 문서:** 웹소켓 연동 및 비즈니스 플랜 등 자세한 내용은 [공식 웹사이트(ragalgo.com)](https://www.ragalgo.com)에서 확인하실 수 있습니다.
 
 ---
 
-# RagAlgo MCP Server (KOR)
+## 🚀 설치 및 실행
 
-금융 뉴스 및 데이터 API를 MCP(Model Context Protocol)로 제공하는 서버입니다.
-
-## 설치
+### 1. 직접 실행 (npx)
 
 ```bash
-cd mcp-server
-npm install
-npm run build
+# 별도 설치 없이 바로 실행 (API Key 필요)
+npx -y @ragalgo/server
 ```
 
-## 환경변수 설정
+### 2. Claude Desktop 설정
 
-```bash
-# Windows (PowerShell)
-$env:RAGALGO_API_KEY="ragalgo_scored_test_a3ed9bd570436d46"
-
-# Windows (CMD)
-set RAGALGO_API_KEY=ragalgo_scored_test_a3ed9bd570436d46
-
-# Mac/Linux
-export RAGALGO_API_KEY="ragalgo_scored_test_a3ed9bd570436d46"
-```
-
-## Claude Desktop 설정
-
-`%APPDATA%\Claude\claude_desktop_config.json` 파일에 추가:
+`%APPDATA%\Claude\claude_desktop_config.json` (Windows) 또는 `~/Library/Application Support/Claude/claude_desktop_config.json` (Mac) 파일에 추가하세요.
 
 ```json
 {
   "mcpServers": {
     "ragalgo": {
-      "command": "node",
-      "args": ["C:\\coding\\RagAlgo\\mcp-server\\dist\\index.js"],
+      "command": "npx",
+      "args": ["-y", "@ragalgo/server", "--stdio"],
       "env": {
-        "RAGALGO_API_KEY": "ragalgo_scored_test_a3ed9bd570436d46"
+        "RAGALGO_API_KEY": "비즈니스_또는_테스트_키_입력"
       }
     }
   }
 }
 ```
 
-## 제공 도구 (9개)
+> **Tip:** 테스트용 API Key는 [RagAlgo 대시보드](https://www.ragalgo.com/dashboard)에서 즉시 발급 가능합니다.
+
+---
+
+
+
+## 🛠️ 제공 도구 (Tools)
 
 | 도구 | 설명 |
 |------|------|
-| `get_news` | 금융 뉴스 조회 (점수 제외) |
-| `get_news_scored` | 금융 뉴스 조회 (점수 포함) |
-| `get_chart_stock` | 주식 차트 점수 조회 |
-| `get_chart_coin` | 코인 차트 점수 조회 |
-| `get_financials` | 재무제표 조회 |
-| `get_snapshots` | 일별 스냅샷 조회 |
-| `search_tags` | 태그 검색 |
-| `match_tags` | 텍스트→태그 매칭 |
-| `get_trends` | 태그별 트렌드 조회 |
+| `get_news_scored` | **[핵심]** 감정 점수(Sentiment Score)가 포함된 금융 뉴스 조회 |
+| `get_chart_stock` | **[핵심]** 한국 주식(KOSPI/KOSDAQ) 기술적 분석 점수 조회 |
+| `get_chart_coin` | **[핵심]** 한국 가상화폐(Upbit) 기술적 분석 점수 조회 |
+| `get_snapshots` | 시장 전체 요약 스냅샷 (뉴스 + 차트 + 트렌드) |
+| `get_financials` | 기업 재무제표 (분기/연간 실적) |
+| `search_tags` | 텍스트(종목명)를 RagAlgo 고유 태그로 변환 |
 
-## 사용 예시
+---
 
-### Claude Desktop에서
+## 📡 Real-time WebSocket (Business Only)
 
-```
-"삼성전자 최근 뉴스 5개 보여줘"
-→ get_news_scored(tag="삼성전자", limit=5)
+실시간 주가/코인 점수 데이터를 웹소켓으로 수신할 수 있습니다.
 
-"반도체 관련 호재 뉴스만 찾아줘"
-→ get_news_scored(tag="반도체", verdict="bullish")
+- **대상:** Business Plan 사용자 (월 30개 연결 포함)
+- **주소:** `wss://ragalgo-relay-server-1-production.up.railway.app`
+- **구현 방법:** `socket.io-client` 라이브러리 사용 (자세한 코드는 [공식 문서](https://www.ragalgo.com/docs) 참조)
 
-"005930 재무제표 보여줘"
-→ get_financials(ticker="005930")
+---
 
-"비트코인 차트 분석"
-→ get_chart_coin(ticker="KRW-BTC")
-```
+## 💬 Community & Support
 
-## API 키 종류
-
-| Tier | API Key | 접근 가능 도구 |
-|------|---------|---------------|
-| nonscored | `ragalgo_nonscored_test_...` | get_news, get_financials, get_chart_*, search_tags, match_tags, get_trends |
-| scored | `ragalgo_scored_test_...` | 위 전부 + get_news_scored, get_snapshots |
-
-## 개발
-
-```bash
-# 개발 모드 실행
-npm run dev
-
-# 빌드
-npm run build
-
-# 프로덕션 실행
-npm start
-```
+- **Website:** [ragalgo.com](https://www.ragalgo.com)
+- **Email:** support@ragalgo.com
