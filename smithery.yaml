@@ -3,8 +3,8 @@ build:
   dockerfile: Dockerfile
   dockerBuildPath: .
 startCommand:
-  type: stdio
-  command: ["node", "/app/dist/index.js", "--stdio"]
+  type: http
+  command: ["node", "/app/dist/index.js"]
   configSchema:
     type: object
     properties:
