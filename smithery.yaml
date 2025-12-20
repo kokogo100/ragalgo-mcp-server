@@ -5,3 +5,10 @@ build:
 startCommand:
   type: stdio
   command: ["node", "/app/dist/index.js", "--stdio"]
+  configSchema:
+    type: object
+    properties:
+      RAGALGO_API_KEY:
+        type: string
+        description: Your API key for the RagAlgo service
+    required: ["RAGALGO_API_KEY"]
