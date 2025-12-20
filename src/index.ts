@@ -406,9 +406,6 @@ Returns: matched tags with confidence scores`,
             app.get('/sse', async (req, res) => {
                 // FIX: Disable buffering for Railway/Nginx proxies to allow real-time SSE
                 res.setHeader('X-Accel-Buffering', 'no');
-                // Content-Type, Cache-Control, Connection are handled by SSEServerTransport or setting them here is fine, 
-                // but flushHeaders() commits the response too early, causing the SDK to fail when it tries to write headers.
-                // res.flushHeaders(); <--- REMOVED due to ERR_HTTP_HEADERS_SENT
 
                 console.log('New SSE connection initiated');
                 const transport = new SSEServerTransport('/messages', res);
@@ -420,12 +417,24 @@ Returns: matched tags with confidence scores`,
                 if (!sessionId) {
                     console.error('CRITICAL: Session ID is missing. Generating fallback UUID.');
                     sessionId = uuidv4();
-                    // Try to force set it if possible, otherwise we rely on local map key
-                    // This largely depends on SDK internals, but having a key is better than undefined
                 }
 
                 transports.set(sessionId, transport);
                 console.error(`Transport created for session: ${sessionId}`); // Log to stderr for Smithery visibility
+
+                // ------------------------------------------------------------------------------------------------
+                // 💓 KEEPALIVE FIX: Send explicit heartbeats for Railway/Glama
+                // ------------------------------------------------------------------------------------------------
+                // Send immediate "ready" packet to flush buffers
+                res.write(':\n\n');
+
+                // Send heartbeat every 15 seconds to prevent load balancer timeouts
+                const keepAliveInterval = setInterval(() => {
+                    if (res.writable) {
+                        res.write(':\n\n');
+                    }
+                }, 15000);
+                // ------------------------------------------------------------------------------------------------
 
                 try {
                     await server.connect(transport);
@@ -437,6 +446,7 @@ Returns: matched tags with confidence scores`,
                 // Cleanup on close
                 req.on('close', () => {
                     console.log(`SSE connection closed for session: ${sessionId}`);
+                    clearInterval(keepAliveInterval); // Stop heartbeats
                     transports.delete(sessionId);
                 });
             });
