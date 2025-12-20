@@ -422,33 +422,35 @@ Returns: matched tags with confidence scores`,
                 transports.set(sessionId, transport);
                 console.error(`Transport created for session: ${sessionId}`); // Log to stderr for Smithery visibility
 
-                // ------------------------------------------------------------------------------------------------
-                // 💓 KEEPALIVE FIX: Send explicit heartbeats for Railway/Glama
-                // ------------------------------------------------------------------------------------------------
-                // Send immediate "ready" packet to flush buffers
-                res.write(':\n\n');
-
-                // Send heartbeat every 15 seconds to prevent load balancer timeouts
-                const keepAliveInterval = setInterval(() => {
-                    if (res.writable) {
-                        res.write(':\n\n');
-                    }
-                }, 15000);
-                // ------------------------------------------------------------------------------------------------
-
                 try {
                     await server.connect(transport);
                     console.error(`Server connected to transport: ${sessionId}`);
+
+                    // ------------------------------------------------------------------------------------------------
+                    // 💓 KEEPALIVE FIX: Send explicit heartbeats for Railway/Glama
+                    // MOVED AFTER connect() to avoid ERR_HTTP_HEADERS_SENT (SDK needs to write headers first)
+                    // ------------------------------------------------------------------------------------------------
+                    // Send immediate "ready" packet to flush buffers
+                    res.write(':\n\n');
+
+                    // Send heartbeat every 15 seconds to prevent load balancer timeouts
+                    const keepAliveInterval = setInterval(() => {
+                        if (res.writable) {
+                            res.write(':\n\n');
+                        }
+                    }, 15000);
+                    // ------------------------------------------------------------------------------------------------
+
+                    // Cleanup on close (moved inside/near the interval creation scope for clarity, though logic remains same)
+                    req.on('close', () => {
+                        console.log(`SSE connection closed for session: ${sessionId}`);
+                        clearInterval(keepAliveInterval); // Stop heartbeats
+                        transports.delete(sessionId);
+                    });
+
                 } catch (error) {
                     console.error(`Error connecting server to transport ${sessionId}:`, error);
                 }
-
-                // Cleanup on close
-                req.on('close', () => {
-                    console.log(`SSE connection closed for session: ${sessionId}`);
-                    clearInterval(keepAliveInterval); // Stop heartbeats
-                    transports.delete(sessionId);
-                });
             });
 
             app.post('/messages', async (req, res) => {
