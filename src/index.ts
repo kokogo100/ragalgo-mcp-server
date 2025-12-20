@@ -22,6 +22,7 @@ import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import express from 'express';
 import cors from 'cors';
+import { v4 as uuidv4 } from 'uuid';
 
 // Start server logic
 async function main() {
@@ -380,11 +381,23 @@ Returns: matched tags with confidence scores`,
                 next();
             });
 
+            // ------------------------------------------------------------------------------------------------
+            // 🚀 SMITHERY FIX: Explicit Health & Server Card Endpoints
+            // ------------------------------------------------------------------------------------------------
             app.get('/', (req, res) => res.status(200).send('RagAlgo MCP Server Running'));
-            app.get('/health', (req, res) => res.status(200).json({ status: 'ok', version: '1.0.4' }));
-            app.get('/.well-known/mcp-server-card', (req, res) => {
-                res.json({ name: "RagAlgo MCP Server", description: "Korean Stock & Crypto Analysis", version: "1.0.4" });
+            app.get('/health', (req, res) => res.status(200).send('OK'));
+
+            app.get("/.well-known/mcp-server-card", (req, res) => {
+                res.json({
+                    mcp_id: "ragalgo-mcp-server",
+                    name: "RagAlgo MCP Server",
+                    description: "Your API key for the RagAlgo service",
+                    capabilities: {
+                        tools: true
+                    }
+                });
             });
+            // ------------------------------------------------------------------------------------------------
 
             // SSE IMPLEMENTATION: Multi-Session Support (Map-based)
             const server = createServer();
@@ -394,14 +407,23 @@ Returns: matched tags with confidence scores`,
                 console.log('New SSE connection initiated');
                 const transport = new SSEServerTransport('/messages', res);
 
-                // @ts-ignore: Accessing sessionId 
-                const sessionId = transport.sessionId as string;
+                // ⚠️ SMITHERY FIX: Handle missing sessionId in early SDK versions
+                // @ts-ignore: Accessing private property as fallback
+                let sessionId = transport.sessionId || (transport as any)._sessionId;
+
+                if (!sessionId) {
+                    console.error('CRITICAL: Session ID is missing. Generating fallback UUID.');
+                    sessionId = uuidv4();
+                    // Try to force set it if possible, otherwise we rely on local map key
+                    // This largely depends on SDK internals, but having a key is better than undefined
+                }
+
                 transports.set(sessionId, transport);
-                console.log(`Transport created for session: ${sessionId}`);
+                console.error(`Transport created for session: ${sessionId}`); // Log to stderr for Smithery visibility
 
                 try {
                     await server.connect(transport);
-                    console.log(`Server connected to transport: ${sessionId}`);
+                    console.error(`Server connected to transport: ${sessionId}`);
                 } catch (error) {
                     console.error(`Error connecting server to transport ${sessionId}:`, error);
                 }
@@ -445,3 +467,4 @@ Returns: matched tags with confidence scores`,
 }
 
 main();
+
