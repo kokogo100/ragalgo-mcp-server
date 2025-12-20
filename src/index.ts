@@ -377,30 +377,50 @@ Returns: matched tags with confidence scores`,
                 res.json({ name: "RagAlgo MCP Server", description: "Korean Stock & Crypto Analysis", version: "1.0.4" });
             });
 
-            // SINGLE Global Server Instance
+            // SSE IMPLEMENTATION: Multi-Session Support (Map-based)
             const server = createServer();
-            let currentTransport: SSEServerTransport | null = null;
+            const transports = new Map<string, SSEServerTransport>();
 
             app.get('/sse', async (req, res) => {
                 console.log('New SSE connection initiated');
                 const transport = new SSEServerTransport('/messages', res);
-                currentTransport = transport;
+
+                // @ts-ignore: Accessing sessionId 
+                const sessionId = transport.sessionId as string;
+                transports.set(sessionId, transport);
+                console.log(`Transport created for session: ${sessionId}`);
 
                 try {
                     await server.connect(transport);
-                    console.log('Server connected to transport');
+                    console.log(`Server connected to transport: ${sessionId}`);
                 } catch (error) {
-                    // Ignore "Already connected" error - checking message or name would be ideal but logging is sufficient
-                    // This happens when new connection comes while old one (e.g. scanner) is technically still linked
-                    console.error('Re-connecting server (expected if previous session active):', error);
+                    console.error(`Error connecting server to transport ${sessionId}:`, error);
                 }
+
+                // Cleanup on close
+                req.on('close', () => {
+                    console.log(`SSE connection closed for session: ${sessionId}`);
+                    transports.delete(sessionId);
+                });
             });
 
             app.post('/messages', async (req, res) => {
-                if (currentTransport) {
-                    await currentTransport.handlePostMessage(req, res);
-                } else {
-                    res.status(404).send('No active connection');
+                const sessionId = req.query.sessionId as string;
+                console.log(`Received message for session: ${sessionId}`);
+
+                const transport = transports.get(sessionId);
+
+                if (!transport) {
+                    console.error(`Session not found: ${sessionId}`);
+                    res.status(404).json({ error: 'Session not found or inactive' });
+                    return;
+                }
+
+                try {
+                    await transport.handlePostMessage(req, res);
+                } catch (error) {
+                    console.error(`Error handling post message for session ${sessionId}:`, error);
+                    res.status(500).json({ error: 'Internal Server Error' });
                 }
             });
 
