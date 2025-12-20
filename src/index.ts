@@ -12,6 +12,26 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import express from 'express';
 import cors from 'cors';
+
+// --- CRITICAL DEBUGGING LOGS ---
+console.log('Server process started');
+console.log('Node version:', process.version);
+try {
+    console.log('Environment Keys:', Object.keys(process.env));
+} catch (e) {
+    console.error('Failed to log env:', e);
+}
+
+process.on('uncaughtException', (err) => {
+    console.error('FATAL CLOUD CRASH (Uncaught Exception):', err);
+    process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('FATAL CLOUD CRASH (Unhandled Rejection) at:', promise, 'reason:', reason);
+    process.exit(1);
+});
+// -------------------------------
 import {
     CallToolRequestSchema,
     ListToolsRequestSchema,
