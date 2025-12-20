@@ -4,7 +4,7 @@ build:
   dockerBuildPath: .
 startCommand:
   type: http
-  command: ["node", "/app/dist/index.js"]
+  command: ["npm", "start"]
   port: 8080
   configSchema:
     type: object

@@ -55,7 +55,7 @@ app.post("/messages", async (req, res) => {
     }
 });
 
-// 4. Smithery가 찾는 핵심 엔드포인트 (반드시 필요)
+// 4. Smithery가 찾는 핵심 엔드포인트
 app.get("/.well-known/mcp-server-card", (req, res) => {
     res.json({
         mcp_id: "ragalgo-mcp-server",
@@ -64,10 +64,11 @@ app.get("/.well-known/mcp-server-card", (req, res) => {
     });
 });
 
+app.get("/", (req, res) => res.send("RagAlgo MCP Server Running"));
 app.get("/health", (req, res) => res.send("ok"));
 
 // 5. 포트 바인딩 (Smithery는 8080을 선호)
 const PORT = 8080;
 app.listen(PORT, "0.0.0.0", () => {
-    console.log(`MCP Server running on port ${PORT}`);
+    console.error(`MCP Server running on port ${PORT}`);
 });
