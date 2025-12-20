@@ -474,7 +474,16 @@ async function main() {
             res.status(200).json({ status: 'ok', version: '1.0.2' });
         });
 
-        app.listen(port, () => {
+        // MCP Server Card endpoint
+        app.get('/.well-known/mcp-server-card', (req, res) => {
+            res.json({
+                "name": "RagAlgo MCP Server",
+                "description": "Korean Stock & Crypto Technical Analysis + Financials",
+                "version": "1.0.0"
+            });
+        });
+
+        app.listen(Number(port), '0.0.0.0', () => {
             console.log(`RagAlgo MCP Server listening on port ${port} (SSE Mode)`);
             console.log(`- SSE Endpoint: http://localhost:${port}/sse`);
             console.log(`- Health Check: http://localhost:${port}/health`);
