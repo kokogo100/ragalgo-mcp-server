@@ -443,6 +443,17 @@ async function main() {
         app.use(cors());
         app.use(express.json());
 
+        // Logging middleware
+        app.use((req, res, next) => {
+            console.log(`[${req.method}] ${req.originalUrl}`);
+            next();
+        });
+
+        // Root handler for health check/discovery
+        app.get('/', (req, res) => {
+            res.status(200).send('RagAlgo MCP Server is running. Endpoint: /sse');
+        });
+
         let transport: SSEServerTransport | null = null;
 
         app.get('/sse', async (req, res) => {
