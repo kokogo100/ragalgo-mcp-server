@@ -404,6 +404,13 @@ Returns: matched tags with confidence scores`,
             const transports = new Map<string, SSEServerTransport>();
 
             app.get('/sse', async (req, res) => {
+                // FIX: Disable buffering for Railway/Nginx proxies to allow real-time SSE
+                res.setHeader('X-Accel-Buffering', 'no');
+                res.setHeader('Content-Type', 'text/event-stream');
+                res.setHeader('Cache-Control', 'no-cache');
+                res.setHeader('Connection', 'keep-alive');
+                res.flushHeaders(); // Flush headers immediately
+
                 console.log('New SSE connection initiated');
                 const transport = new SSEServerTransport('/messages', res);
 
