@@ -5,6 +5,7 @@ build:
 startCommand:
   type: http
   command: ["node", "/app/dist/index.js"]
+  port: 8080
   configSchema:
     type: object
     properties:
