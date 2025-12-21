@@ -42,6 +42,19 @@ npx -y @ragalgo/server
 
 ---
 
+## 📚 Examples & Tutorials
+
+**처음 사용하시나요?** [RagAlgo Cookbook](https://github.com/kokogo100/ragalgo-examples)에서 8가지 단계별 예시를 확인하세요!
+
+- 🐣 **기초**: 5분 만에 종목 점수 확인하기
+- 🧪 **중급**: 기술적 지표와 AI 점수 교차 검증
+- 🚀 **고급**: AI 에이전트 자동 매매 실습 (가상 환경)
+- ☕ **응용**: 매일 아침 나만의 투자 브리핑 봇 만들기
+
+> **"Skeleton + Prompt" 방식**: AI(ChatGPT, Claude)와 함께 코드를 완성하며 배우는 혁신적인 학습 경험!
+
+---
+
 
 
 ## 🛠️ 제공 도구 (Tools)
