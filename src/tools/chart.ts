@@ -25,9 +25,8 @@ export type ChartCoinParams = z.infer<typeof ChartCoinParamsSchema>;
 
 // 주식 차트 조회
 export async function getChartStock(params: ChartStockParams) {
-    const endpoint = params.ticker ? `chart-stock/${params.ticker}` : 'chart-stock';
-    const { ticker, ...queryParams } = params;
-
+    const endpoint = 'chart-stock';
+    // params passes through directly as query params
     const result = await callApi<{
         success: boolean;
         data: {
@@ -53,15 +52,14 @@ export async function getChartStock(params: ChartStockParams) {
             zone: string;
             last_price: number;
         }>;
-    }>(endpoint, queryParams);
+    }>(endpoint, params);
 
     return result;
 }
 
 // 코인 차트 조회
 export async function getChartCoin(params: ChartCoinParams) {
-    const endpoint = params.ticker ? `chart-coin/${params.ticker}` : 'chart-coin';
-    const { ticker, ...queryParams } = params;
+    const endpoint = 'chart-coin';
 
     const result = await callApi<{
         success: boolean;
@@ -86,7 +84,7 @@ export async function getChartCoin(params: ChartCoinParams) {
             zone: string;
             last_price: number;
         }>;
-    }>(endpoint, queryParams);
+    }>(endpoint, params);
 
     return result;
 }
