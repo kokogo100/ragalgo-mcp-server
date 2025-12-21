@@ -47,6 +47,7 @@ async function main() {
         const { searchTags, matchTags, TagsSearchParamsSchema, TagsMatchParamsSchema } = await import('./tools/tags.js');
         const { getTrends, TrendsParamsSchema } = await import('./tools/trends.js');
         const { getResearch, ResearchParamsSchema } = await import('./tools/research.js');
+        const { getAvailableRooms, RoomsParamsSchema } = await import('./tools/rooms.js');
 
         const isStdio = process.argv.includes('--stdio');
 
@@ -333,6 +334,27 @@ Returns: matched tags with confidence scores`,
                                 required: ['text'],
                             },
                         },
+                        {
+                            name: 'get_available_rooms',
+                            description: `📡 [WEBSOCKET DISCOVERY] "The Yellow Pages" for RagAlgo Real-time Channels.
+                            
+Use this tool to find exactly which WebSocket rooms to subscribe to.
+Input "Samsung" -> Returns room_id: "tag:STK005930" and "ticker:005930".
+
+Usage:
+1. User asks: "How do I subscribe to Samsung news?"
+2. AI calls: get_available_rooms(search="Samsung")
+3. Tool returns: [{ room_id: "tag:STK005930", description: "Samsung Electronics" }]
+4. AI replies: "You can subscribe using room_id 'tag:STK005930'"`,
+                            inputSchema: {
+                                type: 'object',
+                                properties: {
+                                    search: { type: 'string', description: 'Search term (e.g., Samsung, Semiconductor)' },
+                                    type: { type: 'string', enum: ['tag', 'ticker', 'keyword'], description: 'Filter by type' },
+                                    limit: { type: 'number', description: 'Limit results' }
+                                }
+                            }
+                        },
                     ],
                 };
             });
@@ -352,6 +374,7 @@ Returns: matched tags with confidence scores`,
                         case 'search_tags': result = await searchTags(TagsSearchParamsSchema.parse(args)); break;
                         case 'match_tags': result = await matchTags(TagsMatchParamsSchema.parse(args)); break;
                         case 'get_trends': result = await getTrends(TrendsParamsSchema.parse(args)); break;
+                        case 'get_available_rooms': result = await getAvailableRooms(RoomsParamsSchema.parse(args)); break;
                         default: throw new Error(`Unknown tool: ${name}`);
                     }
                     return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
