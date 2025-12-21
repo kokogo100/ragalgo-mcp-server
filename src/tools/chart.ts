@@ -43,6 +43,7 @@ export async function getChartStock(params: ChartStockParams) {
                 daily_signal: string;
             };
             outlook?: string;     // Added outlook field
+            chart_history?: any;  // Added for AI Context
             last_price: number;
             updated_at: string;
         } | Array<{
@@ -76,6 +77,7 @@ export async function getChartCoin(params: ChartCoinParams) {
                 daily_signal: string;
             };
             outlook?: string;     // Added outlook field
+            chart_history?: any;  // Added for AI Context
             last_price: number;
             updated_at: string;
         } | Array<{
