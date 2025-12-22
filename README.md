@@ -1,28 +1,48 @@
 # RagAlgo: Dynamic RAG Engine for AI Reliability
 
-> **AI 신뢰성을 위한 다이내믹 RAG 엔진**
+> **"Your AI is an Analyst, NOT a Day Trader."**
 
-RagAlgo는 변동성이 큰 한국 금융(주식/코인) 데이터를 **'태그(Tag)'**와 **'점수(Score)'**로 표준화하여 제공하는 **AI 전용 MCP 서버**입니다.
-여러분의 AI 에이전트가 인터넷을 헤매지 않고, 가장 효율적으로 시장의 "진실(State-of-Truth)"을 파악할 수 있도록 돕습니다.
+RagAlgo is an **MCP Server** that provides **mathematically scored financial context** (Korean Stocks/Crypto) to AI agents.
+We focus on **"State-of-Truth"** (Daily Closed Data) to prevent AI hallucinations caused by real-time market noise.
 
-- **핵심 기능:** KOSPI/KOSDAQ 및 업비트(Upbit) 기반의 실시간 차트 점수, 뉴스 감정 분석
-- **무료 테스트:** 지금 바로 설치하여 **1,000회 무료 호출**로 충분히 테스트해보세요.
-- **상세 문서:** 웹소켓 연동 및 비즈니스 플랜 등 자세한 내용은 [공식 웹사이트(ragalgo.com)](https://www.ragalgo.com)에서 확인하실 수 있습니다.
+- **Analyst, Not Broker:** We provide "Daily Analysis Reports" (Post-Market), not real-time tick data.
+- **Scored Context:** Instead of raw prices, we give you "Scores" (0~100) and "Zones" (Forest vs Tree).
+- **Korean Market Specialist:** Optimized for KOSPI/KOSDAQ and Upbit (Crypto).
+
+👉 **[Official Website (ragalgo.com)](https://www.ragalgo.com)**
 
 ---
 
-## 🚀 설치 및 실행
+## 💡 Why "Daily Close"?
 
-### 1. 직접 실행 (npx)
+Users often ask: *"Why isn't the chart data real-time?"*
+
+**Because AI performs better with clarity.**
+Real-time tick data is full of noise and volatility. If you feed an LLM raw live prices, it often hallucinates patterns that don't exist.
+
+RagAlgo acts like a **Professional Technical Analyst** who works after the market closes:
+1.  **Wait for the dust to settle** (Market Close).
+2.  **Analyze the day's battle** (Daily Candle & Aux Indicators).
+3.  **Deliver a "Confirmed Strategy"** to your AI.
+
+Use RagAlgo to build **"Investment Advisors"**, not "High-Frequency Trading Bots".
+
+---
+
+## 🚀 Quick Start
+
+### 1. Direct Run (npx)
 
 ```bash
-# 별도 설치 없이 바로 실행 (API Key 필요)
+# Run immediately without installation (Requires API Key)
 npx -y @ragalgo/server
 ```
 
-### 2. Claude Desktop 설정
+### 2. Claude Desktop Configuration
 
-`%APPDATA%\Claude\claude_desktop_config.json` (Windows) 또는 `~/Library/Application Support/Claude/claude_desktop_config.json` (Mac) 파일에 추가하세요.
+Add this to your config file:
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+- **Mac:** `~/Library/Application Support/Claude/claude_desktop_config.json`
 
 ```json
 {
@@ -31,56 +51,56 @@ npx -y @ragalgo/server
       "command": "npx",
       "args": ["-y", "@ragalgo/server", "--stdio"],
       "env": {
-        "RAGALGO_API_KEY": "비즈니스_또는_테스트_키_입력"
+        "RAGALGO_API_KEY": "YOUR_API_KEY_HERE"
       }
     }
   }
 }
 ```
 
-> **Tip:** 테스트용 API Key는 [RagAlgo 대시보드](https://www.ragalgo.com/dashboard)에서 즉시 발급 가능합니다.
+> **Tip:** You can get a **Free 1,000 Call Key** instantly at [RagAlgo Dashboard](https://www.ragalgo.com/dashboard).
 
 ---
 
-## 📚 Examples & Tutorials
+## 📚 Cookbook & Examples
 
-**처음 사용하시나요?** [RagAlgo Cookbook](https://github.com/kokogo100/ragalgo-examples)에서 8가지 단계별 예시를 확인하세요!
+**New to AI Trading?**
+Check out our **[RagAlgo Cookbook](https://github.com/kokogo100/ragalgo-examples)** for 8 step-by-step recipes!
 
-- 🐣 **기초**: 5분 만에 종목 점수 확인하기
-- 🧪 **중급**: 기술적 지표와 AI 점수 교차 검증
-- 🚀 **고급**: AI 에이전트 자동 매매 실습 (가상 환경)
-- ☕ **응용**: 매일 아침 나만의 투자 브리핑 봇 만들기
+- 🐣 **Basic:** Get stock scores in 5 minutes.
+- 🧪 **Intermediate:** Verify technical signals with AI.
+- 🚀 **Advanced:** Build an autonomous reasoning agent (Mock Trading).
+- ☕ **Morning Briefing:** Create a bot that emails you a daily market summary.
 
-> **"Skeleton + Prompt" 방식**: AI(ChatGPT, Claude)와 함께 코드를 완성하며 배우는 혁신적인 학습 경험!
-
----
-
-
-
-## 🛠️ 제공 도구 (Tools)
-
-| 도구 | 설명 |
-|------|------|
-| `get_news_scored` | **[핵심]** 감정 점수(Sentiment Score)가 포함된 금융 뉴스 조회 |
-| `get_chart_stock` | **[핵심]** 한국 주식(KOSPI/KOSDAQ) 기술적 분석 점수 조회 |
-| `get_chart_coin` | **[핵심]** 한국 가상화폐(Upbit) 기술적 분석 점수 조회 |
-| `get_snapshots` | 시장 전체 요약 스냅샷 (뉴스 + 차트 + 트렌드) |
-| `get_financials` | 기업 재무제표 (분기/연간 실적) |
-| `search_tags` | 텍스트(종목명)를 RagAlgo 고유 태그로 변환 |
+> **"Skeleton + Prompt" Approach:** We provide the ingredients. You ask ChatGPT/Claude to cook!
 
 ---
 
-## 📡 Real-time WebSocket (Business Only)
+## 🛠️ Available Tools
 
-실시간 주가/코인 점수 데이터를 웹소켓으로 수신할 수 있습니다.
-
-- **대상:** Business Plan 사용자 (월 30개 연결 포함)
-- **주소:** `wss://ragalgo-relay-server-1-production.up.railway.app`
-- **구현 방법:** `socket.io-client` 라이브러리 사용 (자세한 코드는 [공식 문서](https://www.ragalgo.com/docs) 참조)
+| Tool | Description |
+|------|-------------|
+| `get_news_scored` | **[Core]** Financial news with AI Sentiment Scores (-10 ~ +10). |
+| `get_chart_stock` | **[Core]** Korean Stock (KOSPI/KOSDAQ) Technical Analysis (Daily Close). |
+| `get_chart_coin` | **[Core]** Crypto (Upbit) Technical Analysis (Daily Close). |
+| `get_snapshots` | **[Best]** Market Overview (News + Chart + Trend) in one call. |
+| `get_financials` | Corporate Financials (Quarterly/Yearly). |
+| `search_tags` | Convert names (e.g., "Samsung") to RagAlgo Tags. |
 
 ---
 
-## 💬 Community & Support
+## 📡 Real-time WebSocket (Business Tier)
+
+For users who *really* need live data (e.g., for monitoring dashboards), we offer a WebSocket stream.
+*Note: This is strictly for monitoring, not for LLM inference context.*
+
+- **Access:** Business Plan subscribers (Includes 30 connections).
+- **Address:** `wss://ragalgo-relay-server-1-production.up.railway.app`
+- **Guide:** See [Developer Docs](https://www.ragalgo.com/docs) for implementation details.
+
+---
+
+## 💬 Support
 
 - **Website:** [ragalgo.com](https://www.ragalgo.com)
 - **Email:** support@ragalgo.com
