@@ -78,9 +78,14 @@ Check out our **[RagAlgo Cookbook](https://github.com/kokogo100/ragalgo-examples
 
 ## 🛠️ Available Tools
 
+> **⚠️ CORE CONCEPT: Scored vs Raw**
+> - **`get_news_scored` (Default):** Returns only significant news (Scores ≠ 0). Best for AI decision making.
+> - **`get_news` (Raw):** Returns ALL news including noise. Use this ONLY if you need raw data feed.
+
 | Tool | Description |
 |------|-------------|
-| `get_news_scored` | **[Core]** Financial news with AI Sentiment Scores (-10 ~ +10). |
+| `get_news_scored` | **[RECOMMENDED]** News **WITH** AI Sentiment Scores (-10 ~ +10). Filters out noise. |
+| `get_news` | **[Advanced]** Raw News **WITHOUT** scores. Includes 0-score noise. Use only if you build your own scorer. |
 | `get_chart_stock` | **[Core]** Korean Stock (KOSPI/KOSDAQ) Technical Analysis (Daily Close). |
 | `get_chart_coin` | **[Core]** Crypto (Upbit) Technical Analysis (Daily Close). |
 | `get_snapshots` | **[Best]** Market Overview (News + Chart + Trend) in one call. |
