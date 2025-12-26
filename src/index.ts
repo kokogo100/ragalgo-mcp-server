@@ -23,6 +23,43 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprot
 import express from 'express';
 import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
+import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
+import { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
+
+/**
+ * HTTP POST Transport for single-request JSON-RPC (Stateless)
+ * Used by Smithery scanners that probe /mcp
+ */
+class HttpPostTransport implements Transport {
+    private res: express.Response;
+
+    constructor(res: express.Response) {
+        this.res = res;
+    }
+
+    start(): Promise<void> {
+        return Promise.resolve();
+    }
+
+    async send(message: JSONRPCMessage): Promise<void> {
+        this.res.json(message);
+    }
+
+    async close(): Promise<void> {
+        return Promise.resolve();
+    }
+
+    onclose?: () => void;
+    onerror?: (error: Error) => void;
+    onmessage?: (message: JSONRPCMessage) => void;
+
+    // Helper to inject message from the request body
+    handleMessage(message: JSONRPCMessage) {
+        if (this.onmessage) {
+            this.onmessage(message);
+        }
+    }
+}
 
 // Start server logic
 async function main() {
@@ -487,6 +524,18 @@ Usage:
                     res.status(500).json({ error: 'Internal Server Error' });
                 }
             });
+
+            // ------------------------------------------------------------------------------------------------
+            // 🛠️ SMITHERY FIX: Handle POST /mcp for stateless scanners
+            // ------------------------------------------------------------------------------------------------
+            app.post('/mcp', async (req, res) => {
+                console.log('Received POST /mcp probe');
+                const transport = new HttpPostTransport(res);
+                const server = createServer(); // Create a fresh server instance for this stateless request
+                await server.connect(transport);
+                transport.handleMessage(req.body);
+            });
+            // ------------------------------------------------------------------------------------------------
 
             app.listen(Number(port), '0.0.0.0', () => {
                 console.error(`RagAlgo MCP Server listening on port ${port}`);
