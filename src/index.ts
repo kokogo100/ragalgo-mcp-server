@@ -431,16 +431,8 @@ Usage:
                 res.setHeader('X-Accel-Buffering', 'no');
 
                 console.log('New SSE connection initiated');
-                const transport = new SSEServerTransport('/messages', res);
-
-                // ⚠️ SMITHERY FIX: Handle missing sessionId in early SDK versions
-                // @ts-ignore: Accessing private property as fallback
-                let sessionId = transport.sessionId || (transport as any)._sessionId;
-
-                if (!sessionId) {
-                    console.error('CRITICAL: Session ID is missing. Generating fallback UUID.');
-                    sessionId = uuidv4();
-                }
+                const sessionId = uuidv4();
+                const transport = new SSEServerTransport(`/messages?sessionId=${sessionId}`, res);
 
                 transports.set(sessionId, transport);
                 console.error(`Transport created for session: ${sessionId}`); // Log to stderr for Smithery visibility
