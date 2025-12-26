@@ -62,15 +62,19 @@ Add this to your config file:
 
 ---
 
-## 📚 Cookbook & Examples
+## 📚 Usage Examples (Cookbook)
 
-**New to AI Trading?**
-Check out our **[RagAlgo Cookbook](https://github.com/kokogo100/ragalgo-examples)** for 8 step-by-step recipes!
+We have a **dedicated repository** for practical examples to help you get started quickly.
+Please visit the **[RagAlgo Examples Repository](https://github.com/kokogo100/ragalgo-examples)**.
 
-- 🐣 **Basic:** Get stock scores in 5 minutes.
-- 🧪 **Intermediate:** Verify technical signals with AI.
-- 🚀 **Advanced:** Build an autonomous reasoning agent (Mock Trading).
-- ☕ **Morning Briefing:** Create a bot that emails you a daily market summary.
+### What's Inside?
+- **8 Step-by-Step Recipes:** From basic data fetching to advanced AI agents.
+- **Skeleton Code + Prompts:** Copy-paste ready resources.
+- **Scenarios:**
+  - 🐣 **Basic:** Get stock scores in 5 minutes.
+  - 🧪 **Intermediate:** Verify technical signals with AI.
+  - 🚀 **Advanced:** Build an autonomous reasoning agent (Mock Trading Audit).
+  - ☕ **Morning Briefing:** Create a bot that emails you a daily market summary.
 
 > **"Skeleton + Prompt" Approach:** We provide the ingredients. You ask ChatGPT/Claude to cook!
 
