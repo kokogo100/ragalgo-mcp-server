@@ -34,15 +34,21 @@ import { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
  * HTTP POST Transport for single-request JSON-RPC (Stateless)
  * Robust version that handles notifications vs requests and prevents timeouts.
  */
+/**
+ * HTTP POST Transport for JSON-RPC (Stateless)
+ * Robust version that handles Batch Requests, Buffering, and Shims.
+ */
 class HttpPostTransport implements Transport {
     private res: express.Response;
     private ignoredIds: Set<string | number> = new Set();
+    private responseBuffer: JSONRPCMessage[] = [];
+    private isBatch: boolean;
 
-    constructor(res: express.Response) {
+    constructor(res: express.Response, isBatch: boolean = false) {
         this.res = res;
+        this.isBatch = isBatch;
     }
 
-    // Allow marking IDs as internal/hidden so they don't trigger an HTTP response
     ignoreId(id: string | number) {
         this.ignoredIds.add(id);
     }
@@ -52,23 +58,35 @@ class HttpPostTransport implements Transport {
     }
 
     async send(message: JSONRPCMessage): Promise<void> {
-        // 🚨 CRITICAL FIX: Only send HTTP response for proper JSON-RPC Responses (which have ID).
+        // Filter out ignored messages (internal shims)
+        if ((message as any).id && this.ignoredIds.has((message as any).id)) {
+            return;
+        }
 
-        if ((message as any).id) {
-            const id = (message as any).id;
+        // Buffer the response
+        this.responseBuffer.push(message);
+    }
 
-            // If this is an auto-init response (hidden), suppress it from the HTTP client
-            if (this.ignoredIds.has(id)) {
-                return;
-            }
+    // Explicit method to flush responses to HTTP
+    async flush(): Promise<void> {
+        if (this.res.headersSent) return;
 
-            // This is a REAL response -> Send it back to HTTP client
-            if (!this.res.headersSent) {
-                this.res.json(message);
-            }
+        // If no responses, send 204 No Content (or 200 OK for notifications)
+        if (this.responseBuffer.length === 0) {
+            this.res.status(204).end();
+            return;
+        }
+
+        // Send Batch or Single response
+        if (this.isBatch) {
+            this.res.json(this.responseBuffer);
         } else {
-            // This is a notification (e.g. logs) -> Log internally
-            console.error(`[Notification] ${(message as any).method}`, message);
+            // If single request produced multiple responses, tecnically not valid JSON-RPC unless batch?
+            // But usually 1 req -> 1 res.
+            // If we have >1 response for single req (unlikely), send last? or array?
+            // Strict JSON-RPC: Single Request -> Single Response.
+            // We just send the first one.
+            this.res.json(this.responseBuffer[0]);
         }
     }
 
@@ -276,11 +294,64 @@ async function main() {
             // 🛠️ SMITHERY FIX: Handle POST /mcp for stateless scanners
             // ------------------------------------------------------------------------------------------------
             app.post('/mcp', async (req, res) => {
-                console.log('Received POST /mcp probe');
-                const transport = new HttpPostTransport(res);
-                const server = createServer(); // Create a fresh server instance for this stateless request
-                await server.connect(transport);
-                transport.handleMessage(req.body);
+                // 1. TIMEOUT SAFEGUARD: Prevent hanging requests
+                const timeout = setTimeout(() => {
+                    if (!res.headersSent) res.status(504).send('Gateway Timeout: MCP Server processing took too long');
+                }, 10000);
+
+                try {
+                    console.log('Received POST /mcp probe. Body:', JSON.stringify(req.body));
+                    const isBatch = Array.isArray(req.body);
+                    const messages = isBatch ? (req.body as JSONRPCMessage[]) : [req.body as JSONRPCMessage];
+
+                    // 2. CHECK IF INITIALIZATION IS NEEDED
+                    // If any message in the batch is 'initialize', we let the client handle it.
+                    // If NO message is 'initialize', we must shim it.
+                    const hasInit = messages.some(m => (m as any).method === 'initialize');
+
+                    const transport = new HttpPostTransport(res, isBatch);
+                    const server = createServer();
+                    await server.connect(transport);
+
+                    // 3. INJECT SHIM IF NEEDED
+                    if (!hasInit) {
+                        console.log('[Stateless Shim] Injecting auto-initialization...');
+                        const shimId = '__auto_init__';
+                        transport.ignoreId(shimId);
+
+                        // Inject 'initialize'
+                        await transport.handleMessage({
+                            jsonrpc: '2.0',
+                            id: shimId,
+                            method: 'initialize',
+                            params: {
+                                protocolVersion: '2024-11-05',
+                                capabilities: {},
+                                clientInfo: { name: 'stateless-shim', version: '1.0.0' }
+                            }
+                        } as any);
+
+                        // Inject 'notifications/initialized'
+                        await transport.handleMessage({
+                            jsonrpc: '2.0',
+                            method: 'notifications/initialized'
+                        } as any);
+                    }
+
+                    // 4. PROCESS ACTUAL MESSAGES
+                    for (const msg of messages) {
+                        await transport.handleMessage(msg);
+                    }
+
+                    // 5. FLUSH RESPONSES
+                    await transport.flush();
+
+                } catch (error) {
+                    console.error('Error in POST /mcp:', error);
+                    if (!res.headersSent) res.status(500).json({ error: 'Internal Server Error', details: String(error) });
+                } finally {
+                    clearTimeout(timeout);
+                }
             });
             // ------------------------------------------------------------------------------------------------
 
