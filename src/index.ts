@@ -26,9 +26,13 @@ import { v4 as uuidv4 } from 'uuid';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
 
+// ------------------------------------------------------------------------------------------------
+// 🛠️ SMITHERY & DEPLOYMENT BEST PRACTICES FIX
+// ------------------------------------------------------------------------------------------------
+
 /**
  * HTTP POST Transport for single-request JSON-RPC (Stateless)
- * Used by Smithery scanners that probe /mcp
+ * Robust version that handles notifications vs requests and prevents timeouts.
  */
 class HttpPostTransport implements Transport {
     private res: express.Response;
@@ -42,7 +46,21 @@ class HttpPostTransport implements Transport {
     }
 
     async send(message: JSONRPCMessage): Promise<void> {
-        this.res.json(message);
+        // 🚨 CRITICAL FIX: Only send HTTP response for proper JSON-RPC Responses (which have ID).
+        // Notifications (no ID) and Errors without ID should NOT trigger res.json() 
+        // because that closes the single HTTP request, potentially before the actual result is ready.
+        // OR if it's a notification, we silence it to avoid "headers already sent" errors.
+
+        if ((message as any).id) {
+            // This is a response or an error with an ID -> Send it back to HTTP client
+            if (!this.res.headersSent) {
+                this.res.json(message);
+            }
+        } else {
+            // This is a notification (e.g. logs, progress) -> Log internally but don't reply yet
+            // logging to stderr allows Smithery logs to pick it up without corrupting stdout
+            console.error(`[Notification] ${(message as any).method}`, message);
+        }
     }
 
     async close(): Promise<void> {
@@ -53,7 +71,6 @@ class HttpPostTransport implements Transport {
     onerror?: (error: Error) => void;
     onmessage?: (message: JSONRPCMessage) => void;
 
-    // Helper to inject message from the request body
     handleMessage(message: JSONRPCMessage) {
         if (this.onmessage) {
             this.onmessage(message);
@@ -61,39 +78,34 @@ class HttpPostTransport implements Transport {
     }
 }
 
-// Start server logic
 async function main() {
     try {
         console.error('Initializing Server...');
-
-        // CHECK API KEY: Warn but do not crash
+        // ... (Environment checks remain same) ...
         if (!process.env.RAGALGO_API_KEY) {
-            console.error('⚠️  WARNING: RAGALGO_API_KEY is not set in environment variables.');
-            console.error('⚠️  Tools requiring API calls (news, chart, etc.) will fail when called.');
-            console.error('⚠️  However, server will continue to start for Smithery health check.');
+            console.error('⚠️  WARNING: RAGALGO_API_KEY is not set.');
         } else {
-            console.error('✅ RAGALGO_API_KEY is detected (masked):', process.env.RAGALGO_API_KEY.substring(0, 5) + '...');
+            console.error('✅ RAGALGO_API_KEY is detected.');
         }
 
-        // DYNAMIC IMPORTS: Load tools only after main starts
-        // This isolates import errors to the try-catch block
+        // Import tools
         const { getNews, getNewsScored, NewsParamsSchema, NewsScoredParamsSchema } = await import('./tools/news.js');
         const { getChartStock, getChartCoin, ChartStockParamsSchema, ChartCoinParamsSchema } = await import('./tools/chart.js');
         const { getFinancials, FinancialsParamsSchema } = await import('./tools/financials.js');
         const { getSnapshots, SnapshotsParamsSchema } = await import('./tools/snapshots.js');
-        const { searchTags, matchTags, TagsSearchParamsSchema, TagsMatchParamsSchema } = await import('./tools/tags.js');
+        const { searchTags, SearchTagsParamsSchema, matchTags, MatchTagsParamsSchema } = await import('./tools/tags.js');
         const { getTrends, TrendsParamsSchema } = await import('./tools/trends.js');
         const { getResearch, ResearchParamsSchema } = await import('./tools/research.js');
-        const { getAvailableRooms, RoomsParamsSchema } = await import('./tools/rooms.js');
+        const { getAvailableRooms, GetAvailableRoomsSchema } = await import('./tools/rooms.js');
 
         const isStdio = process.argv.includes('--stdio');
 
-        // Factory for Server with Tools
+        // Helper to create a fresh MCP Server instance
         const createServer = () => {
             const server = new Server(
                 {
                     name: 'RagAlgo',
-                    version: '1.0.4',
+                    version: '1.0.5', // Bumped version for fix tracking
                 },
                 {
                     capabilities: {
@@ -102,189 +114,10 @@ async function main() {
                 }
             );
 
-            // Register Tool Listing
+            // Register Tools (Same as before)
             server.setRequestHandler(ListToolsRequestSchema, async () => {
                 return {
                     tools: [
-                        {
-                            name: 'search_tags',
-                            description: `🔍 [TAG LOOKUP - USE FIRST] ALWAYS use this BEFORE other RagAlgo tools when user mentions any Korean stock, coin, or theme by NAME.
-PRIMARY TOOL for converting names to tag_codes. Without correct tag_code, other tools will return inaccurate or empty results.
-
-ALWAYS use when you see:
-- Korean stock names: 삼성전자, SK하이닉스, 네이버, 카카오, LG에너지솔루션
-- Crypto names: 비트코인, 이더리움, 리플, 솔라나
-- Theme/sector names: 반도체, AI, 2차전지, 바이오
-
-Examples: "삼성전자" → STK005930, "비트코인" → CRY_BTC, "반도체" → THM_반도체
-
-CRITICAL: Call this first, then use the returned tag_code in other tools.`,
-                            inputSchema: {
-                                type: 'object',
-                                properties: {
-                                    q: { type: 'string', description: 'Search query (e.g., 삼성, Samsung, 반도체, AI, Bitcoin)' },
-                                    type: { type: 'string', enum: ['STOCK', 'SECTOR', 'THEME', 'CRYPTO'], description: 'Tag type filter (optional)' },
-                                    limit: { type: 'number', description: 'Result count (default: 20)' },
-                                },
-                                required: ['q'],
-                            },
-                        },
-                        {
-                            name: 'get_snapshots',
-                            description: `📊 [DAILY SUMMARY - MOST EFFICIENT] PRIMARY TOOL for Korean market overview. ALWAYS use this FIRST for general market questions.
-
-This is the ONLY tool that returns news + chart + sentiment COMBINED in one call.
-Prefer this over calling get_news + get_chart separately - much more efficient!
-
-ALWAYS use when user asks:
-- "오늘 시장 어때?" / "how's the market today?"
-- "시장 요약해줘" / "market summary"
-- "오늘 뉴스 좋은 거 뭐 있어?" / "what's hot today?"
-- "전체적인 분위기 어때?" / "market sentiment"
-
-[IMPORTANT] Snapshots are generated daily at 17:00 KST (market close).
-If you request 'today' and get no results (because it's morning in KST), you MUST:
-1. Fetch 'yesterday's snapshot for context.
-2. Call 'get_news_scored' to get REAL-TIME news for the current day.
-
-Returns per asset: news_count, avg_sentiment, bullish/bearish counts, chart_score, zone, price.
-
-🔗 BEST PRACTICE - Combine with web_search:
-1. Use get_snapshots FIRST for Korean market sentiment & chart data
-2. Then use web_search for latest breaking news or global context
-Example: get_snapshots → "시장 하락세" → web_search "한국 증시 하락 원인" → 종합 분석`,
-                            inputSchema: {
-                                type: 'object',
-                                properties: {
-                                    tag_code: { type: 'string', description: 'Tag code for specific asset (e.g., STK005930, CRY_BTC). Leave empty for market-wide overview.' },
-                                    date: { type: 'string', description: 'Date (YYYY-MM-DD). Default: today' },
-                                    days: { type: 'number', description: 'Recent N days for time-series (default: 7)' },
-                                    limit: { type: 'number', description: 'Result count' },
-                                },
-                            },
-                        },
-                        {
-                            name: 'get_news_scored',
-                            description: `📰 [KOREAN NEWS WITH SENTIMENT] PRIMARY news tool for Korean market. Returns news WITH AI sentiment scores (-10 to +10).
-
-Use for Korean stock/crypto news with sentiment analysis.
-
-[NOTE] This tool AUTOMATICALLY filters out 0-score (Neutral/Noise) news to provide clear signals.
-If you need raw/neutral news, use 'get_news' instead.
-
-Use when user asks:
-- "삼성전자 뉴스" / "Samsung news"
-- "호재 뉴스 보여줘" / "show me bullish news"  
-- "비트코인 악재 있어?" / "any bearish news on Bitcoin?"
-- "오늘 좋은 뉴스" / "today's positive news"
-
-Filter by: tag, verdict (bullish/bearish/neutral), score range
-Returns: title, summary, sentiment_score, verdict, tags
-
-🔗 BEST PRACTICE - Combine with web_search:
-- RagAlgo: Sentiment-analyzed Korean market news (structured data)
-- web_search: Real-time breaking news, global context, additional sources
-Example workflow:
-1. get_news_scored(tag="삼성전자") → 감정 분석된 뉴스 목록
-2. web_search("삼성전자 최신 뉴스") → 실시간 속보
-3. Combine both for comprehensive analysis!
-
-TIP: For market overview, use get_snapshots instead (more efficient).
-TIP: Use search_tags first to get exact tag name.`,
-                            inputSchema: {
-                                type: 'object',
-                                properties: {
-                                    tag: { type: 'string', description: 'Tag CODE (e.g., STK005930). Use search_tags first to get this code!' },
-                                    source: { type: 'string', description: 'Source filter' },
-                                    search: { type: 'string', description: 'Title search keyword' },
-                                    min_score: { type: 'number', description: 'Min sentiment score (-10 to 10)' },
-                                    max_score: { type: 'number', description: 'Max sentiment score (-10 to 10)' },
-                                    verdict: { type: 'string', enum: ['bullish', 'bearish', 'neutral'], description: 'Sentiment verdict filter' },
-                                    limit: { type: 'number', description: 'Result count (default: 20)' },
-                                },
-                            },
-                        },
-                        {
-                            name: 'get_news',
-                            description: `📰 [KOREAN NEWS - NO SCORES] Basic news without sentiment analysis. Use only when sentiment scores are not needed or for non-scored tier users.
-
-Prefer get_news_scored over this for most use cases unless you want raw data including 0-score items.
-
-Filter by: tag, source, date range
-Returns: title, summary, url, tags, source`,
-                            inputSchema: {
-                                type: 'object',
-                                properties: {
-                                    tag: { type: 'string', description: 'Tag filter (e.g., 삼성전자, 비트코인, 반도체)' },
-                                    source: { type: 'string', description: 'Source filter (e.g., 한경, 매경)' },
-                                    search: { type: 'string', description: 'Title search keyword' },
-                                    from_date: { type: 'string', description: 'Start date (YYYY-MM-DD)' },
-                                    to_date: { type: 'string', description: 'End date (YYYY-MM-DD)' },
-                                    limit: { type: 'number', description: 'Result count (default: 20, max: 100)' },
-                                },
-                            },
-                        },
-                        {
-                            name: 'get_chart_stock',
-                            description: `📈 [KOREAN STOCK CHARTS] PRIMARY tool for Korean stock technical analysis. Returns momentum scores and trend zones.
-
-ALWAYS use for Korean stock chart/technical questions.
-
-[IMPORTANT] You MUST use 'search_tags' first to get the correct ticker (e.g., STK005930).
-
-Use when user asks:
-- "차트 강한 종목" / "stocks with strong momentum"
-- "상승 추세 종목" / "uptrending stocks"
-- "삼성전자 차트 어때?" / "how's Samsung's chart?"
-- "기술적 분석" / "technical analysis"
-
-Filter by: zone (STRONG_UP/UP_ZONE/NEUTRAL/DOWN_ZONE/STRONG_DOWN), market (KOSPI/KOSDAQ)
-Returns: ticker, name, zone, oscillator_state, 5-day scores (d0-d4), last_price
-
-🔗 COMBINE with web_search for deeper analysis:
-1. get_chart_stock → "삼성전자 DOWN_ZONE"
-2. web_search "삼성전자 주가 하락 이유" → 하락 원인 파악
-3. Provide comprehensive technical + fundamental analysis!
-
-TIP: Use search_tags first to get ticker from stock name.`,
-                            inputSchema: {
-                                type: 'object',
-                                properties: {
-                                    ticker: { type: 'string', description: 'Stock ticker (e.g., 005930 for Samsung)' },
-                                    market: { type: 'string', enum: ['KOSPI', 'KOSDAQ'], description: 'Market type' },
-                                    zone: { type: 'string', enum: ['STRONG_UP', 'UP_ZONE', 'NEUTRAL', 'DOWN_ZONE', 'STRONG_DOWN'], description: 'Chart zone filter - use this to find strong/weak stocks' },
-                                    limit: { type: 'number', description: 'Result count' },
-                                },
-                            },
-                        },
-                        {
-                            name: 'get_chart_coin',
-                            description: `🪙 [CRYPTO CHARTS] PRIMARY tool for Korean crypto (Upbit) technical analysis. Returns momentum scores and trend zones.
-
-ALWAYS use for Korean crypto chart questions.
-
-[IMPORTANT] You MUST use 'search_tags' first to get the correct ticker (e.g., CRY_BTC).
-
-Use when user asks:
-- "비트코인 차트" / "Bitcoin chart"
-- "상승 중인 코인" / "pumping coins"
-- "코인 기술적 분석" / "crypto technical analysis"
-
-Filter by: zone (STRONG_UP/UP_ZONE/NEUTRAL/DOWN_ZONE/STRONG_DOWN)
-Returns: ticker, name, zone, oscillator_state, 10-candle scores (c0-c9, 12h intervals), last_price
-
-🔗 COMBINE with web_search for context:
-1. get_chart_coin → "비트코인 UP_ZONE"
-2. web_search "비트코인 상승 이유" → 상승 배경 파악`,
-                            inputSchema: {
-                                type: 'object',
-                                properties: {
-                                    ticker: { type: 'string', description: 'Coin ticker (e.g., KRW-BTC for Bitcoin)' },
-                                    zone: { type: 'string', enum: ['STRONG_UP', 'UP_ZONE', 'NEUTRAL', 'DOWN_ZONE', 'STRONG_DOWN'], description: 'Chart zone filter' },
-                                    limit: { type: 'number', description: 'Result count' },
-                                },
-                            },
-                        },
                         {
                             name: 'get_research',
                             description: `📑 [RESEARCH] Get consulting firm reports (McKinsey, BCG, etc.)

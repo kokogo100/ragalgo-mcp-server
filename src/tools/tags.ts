@@ -22,6 +22,9 @@ export const TagsMatchParamsSchema = z.object({
 export type TagsSearchParams = z.infer<typeof TagsSearchParamsSchema>;
 export type TagsMatchParams = z.infer<typeof TagsMatchParamsSchema>;
 
+export const SearchTagsParamsSchema = TagsSearchParamsSchema;
+export const MatchTagsParamsSchema = TagsMatchParamsSchema;
+
 // 태그 검색
 export async function searchTags(params: TagsSearchParams) {
     const result = await callApi<{

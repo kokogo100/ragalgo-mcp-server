@@ -12,6 +12,7 @@ export const RoomsParamsSchema = z.object({
 });
 
 export type RoomsParams = z.infer<typeof RoomsParamsSchema>;
+export const GetAvailableRoomsSchema = RoomsParamsSchema;
 
 export async function getAvailableRooms(params: RoomsParams) {
     const url = new URL(`${SUPABASE_REST_URL}/available_websocket_rooms`);
