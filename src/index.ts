@@ -71,9 +71,11 @@ class HttpPostTransport implements Transport {
     async flush(): Promise<void> {
         if (this.res.headersSent) return;
 
-        // If no responses, send 204 No Content (or 200 OK for notifications)
+        // If no responses, send 200 OK with empty array (or object) to allow client parsing
+        // Smithery seems to error on 204 No Content ("Unexpected content type: null")
         if (this.responseBuffer.length === 0) {
-            this.res.status(204).end();
+            console.log('Use HttpPostTransport: Buffer empty, sending []');
+            this.res.status(200).json([]);
             return;
         }
 
@@ -81,11 +83,7 @@ class HttpPostTransport implements Transport {
         if (this.isBatch) {
             this.res.json(this.responseBuffer);
         } else {
-            // If single request produced multiple responses, tecnically not valid JSON-RPC unless batch?
-            // But usually 1 req -> 1 res.
-            // If we have >1 response for single req (unlikely), send last? or array?
             // Strict JSON-RPC: Single Request -> Single Response.
-            // We just send the first one.
             this.res.json(this.responseBuffer[0]);
         }
     }
