@@ -44,6 +44,10 @@ class HttpPostTransport implements Transport {
     private responseBuffer: JSONRPCMessage[] = [];
     private isBatch: boolean;
 
+    // Async Synchronization for Stateless HTTP
+    private pendingRequestIds: Set<string | number> = new Set();
+    private responseResolvers: Map<string | number, () => void> = new Map();
+
     constructor(res: express.Response, isBatch: boolean = false) {
         this.res = res;
         this.isBatch = isBatch;
@@ -53,23 +57,50 @@ class HttpPostTransport implements Transport {
         this.ignoredIds.add(id);
     }
 
+    // Called by the handler to signal we EXPECT a response for this ID
+    markRequestPending(id: string | number) {
+        this.pendingRequestIds.add(id);
+    }
+
     start(): Promise<void> {
         return Promise.resolve();
     }
 
     async send(message: JSONRPCMessage): Promise<void> {
-        // Filter out ignored messages (internal shims)
-        if ((message as any).id && this.ignoredIds.has((message as any).id)) {
+        const id = (message as any).id;
+
+        // 1. Check if this is a response to a pending request
+        if (id !== undefined && (message as any).result !== undefined || (message as any).error !== undefined) {
+            if (this.pendingRequestIds.has(id)) {
+                this.pendingRequestIds.delete(id);
+                // If there's a resolver waiting for this ID (unlikely in this design, but good for completeness)
+                // meaningful if we were waiting on specific ID promises.
+            }
+        }
+
+        // 2. Filter out ignored messages (internal shims)
+        // Even if ignored, we effectively "handled" the pending state by receiving it here.
+        if (id !== undefined && this.ignoredIds.has(id)) {
             return;
         }
 
-        // Buffer the response
+        // 3. Buffer the response
         this.responseBuffer.push(message);
     }
 
     // Explicit method to flush responses to HTTP
     async flush(): Promise<void> {
         if (this.res.headersSent) return;
+
+        // WAIT loop: Wait for all pending requests to result in a response (or timeout)
+        const startTime = Date.now();
+        while (this.pendingRequestIds.size > 0) {
+            if (Date.now() - startTime > 9000) { // 9s timeout (server has 10s global timeout)
+                console.error('HttpPostTransport: Timed out waiting for pending responses:', Array.from(this.pendingRequestIds));
+                break;
+            }
+            await new Promise(resolve => setTimeout(resolve, 50)); // Poll every 50ms
+        }
 
         // If no responses, send 200 OK with empty array (or object) to allow client parsing
         // Smithery seems to error on 204 No Content ("Unexpected content type: null")
@@ -232,14 +263,14 @@ async function main() {
 
                 console.log('New SSE connection initiated');
                 const sessionId = uuidv4();
-                const transport = new SSEServerTransport(`/ messages ? sessionId = ${sessionId} `, res);
+                const transport = new SSEServerTransport(`/messages?sessionId=${sessionId}`, res);
 
                 transports.set(sessionId, transport);
-                console.error(`Transport created for session: ${sessionId} `); // Log to stderr for Smithery visibility
+                console.error(`Transport created for session: ${sessionId}`); // Log to stderr for Smithery visibility
 
                 try {
                     await server.connect(transport);
-                    console.error(`Server connected to transport: ${sessionId} `);
+                    console.error(`Server connected to transport: ${sessionId}`);
 
                     // ------------------------------------------------------------------------------------------------
                     // 💓 KEEPALIVE FIX: Send explicit heartbeats for Railway/Glama
@@ -258,24 +289,24 @@ async function main() {
 
                     // Cleanup on close (moved inside/near the interval creation scope for clarity, though logic remains same)
                     req.on('close', () => {
-                        console.log(`SSE connection closed for session: ${sessionId} `);
+                        console.log(`SSE connection closed for session: ${sessionId}`);
                         clearInterval(keepAliveInterval); // Stop heartbeats
                         transports.delete(sessionId);
                     });
 
                 } catch (error) {
-                    console.error(`Error connecting server to transport ${sessionId}: `, error);
+                    console.error(`Error connecting server to transport ${sessionId}:`, error);
                 }
             });
 
             app.post('/messages', async (req, res) => {
                 const sessionId = req.query.sessionId as string;
-                console.log(`Received message for session: ${sessionId} `);
+                console.log(`Received message for session: ${sessionId}`);
 
                 const transport = transports.get(sessionId);
 
                 if (!transport) {
-                    console.error(`Session not found: ${sessionId} `);
+                    console.error(`Session not found: ${sessionId}`);
                     res.status(404).json({ error: 'Session not found or inactive' });
                     return;
                 }
@@ -283,7 +314,7 @@ async function main() {
                 try {
                     await transport.handlePostMessage(req, res);
                 } catch (error) {
-                    console.error(`Error handling post message for session ${sessionId}: `, error);
+                    console.error(`Error handling post message for session ${sessionId}:`, error);
                     res.status(500).json({ error: 'Internal Server Error' });
                 }
             });
@@ -338,6 +369,10 @@ async function main() {
 
                     // 4. PROCESS ACTUAL MESSAGES
                     for (const msg of messages) {
+                        // Mark requests as PENDING so flush() waits for them
+                        if ((msg as any).id !== undefined) {
+                            transport.markRequestPending((msg as any).id);
+                        }
                         await transport.handleMessage(msg);
                     }
 
