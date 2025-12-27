@@ -13,6 +13,19 @@ We focus on **"State-of-Truth"** (Daily Closed Data) to prevent AI hallucination
 
 ---
 
+## 📖 Architecture & Whitepaper
+
+Discover why RagAlgo is the **"Hippocampus"** for Agentic AI, not just another RAG.
+
+*   **[Vision Whitepaper (The Hook)](./docs/RagAlgo_Whitepaper_Vision.md)**
+    *   **Concept**: Why RagAlgo is a "Semantic Digital Twin" (SDT) using the Hippocampus analogy.
+    *   **Value**: Explains the "Self-Growing Taxonomy" and "Data Flywheel" effect.
+*   **[Technical Report (The Proof)](./docs/RagAlgo_Technical_Report_Architecture.md)**
+    *   **Deep Dive**: Detailed anatomy of the Contextual Knowledge Network (CKN).
+    *   **2025 Trend**: How RagAlgo serves as the memory layer for **Agentic AI** (e.g., PepsiCo/Salesforce Agentforce).
+
+---
+
 ## 💡 Why "Daily Close"?
 
 Users often ask: *"Why isn't the chart data real-time?"*
