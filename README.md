@@ -1,5 +1,7 @@
 # RagAlgo: Dynamic RAG Engine for AI Reliability
 
+[![smithery badge](https://smithery.ai/badge/ragalgo/ragalgo-mcp-server)](https://smithery.ai/server/ragalgo/ragalgo-mcp-server)
+
 > **"Your AI is an Analyst, NOT a Day Trader."**
 
 RagAlgo is an **MCP Server** that provides **mathematically scored financial context** (Korean Stocks/Crypto) to AI agents.
