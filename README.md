@@ -93,7 +93,21 @@ Please visit the **[RagAlgo Examples Repository](https://github.com/kokogo100/ra
 
 ---
 
-## 🛠️ Available Tools
+## 🌍 Supported Markets & Roadmap
+
+RagAlgo is expanding its CKN coverage globally. Currently, the Korean market and Crypto assets are fully supported.
+
+| Market | Asset Class | Status |
+| :--- | :--- | :--- |
+| **🇰🇷 Korea** | KOSPI / KOSDAQ | **🟢 Live** (Real-time Sentiment & Charts) |
+| **🪙 Crypto** | Upbit / Binance | **🟢 Live** (Real-time Sentiment & Charts) |
+| **🇺🇸 USA** | NYSE / NASDAQ | **🟡 In Development** (Q1 2026) |
+| **🇯🇵 Japan** | Nikkei 225 | **🟡 In Development** (Q1 2026) |
+| **🇬🇧 UK** | LSE | **🟡 In Development** (Q1 2026) |
+
+---
+
+## 🛠 Tools
 
 > **⚠️ CORE CONCEPT: Scored vs Raw**
 > - **`get_news_scored` (Default):** Returns only significant news (Scores ≠ 0). Best for AI decision making.
