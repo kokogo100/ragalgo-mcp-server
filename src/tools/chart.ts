@@ -8,7 +8,7 @@ import { callApi } from '../utils/api.js';
 // 주식 차트 파라미터 스키마
 export const ChartStockParamsSchema = z.object({
     ticker: z.string().optional().describe('종목 코드 (예: 005930)'),
-    market: z.enum(['KOSPI', 'KOSDAQ']).optional().describe('시장 구분'),
+    market: z.enum(['KOSPI', 'KOSDAQ', 'US', 'JP', 'UK']).optional().describe('시장 구분 (KOSPI/KOSDAQ/US/JP/UK)'),
     zone: z.enum(['STRONG_UP', 'UP_ZONE', 'NEUTRAL', 'DOWN_ZONE', 'STRONG_DOWN']).optional().describe('차트 구간'),
     limit: z.number().min(1).max(100).default(20).describe('결과 수'),
 });

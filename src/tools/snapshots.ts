@@ -8,6 +8,7 @@ import { callApi } from '../utils/api.js';
 // 스냅샷 파라미터 스키마
 export const SnapshotsParamsSchema = z.object({
     tag_code: z.string().optional().describe('태그 코드 (예: STK005930)'),
+    market: z.enum(['KR', 'US', 'JP', 'UK']).optional().describe('시장 구분 (KR/US/JP/UK)'),
     date: z.string().optional().describe('날짜 (YYYY-MM-DD)'),
     days: z.number().min(1).max(30).default(7).describe('최근 N일 (기본: 7)'),
     limit: z.number().min(1).max(100).default(50).describe('결과 수'),
@@ -28,6 +29,9 @@ export async function getSnapshots(params: SnapshotsParams) {
     // 태그 코드가 있으면 쿼리 파라미터에 추가
     if (tag_code) {
         (queryParams as any).tag_code = tag_code;
+    }
+    if (params.market) {
+        (queryParams as any).market = params.market;
     }
 
     const result = await callApi<{
