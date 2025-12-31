@@ -9,7 +9,7 @@ import { callApi } from '../utils/api.js';
 export const FinancialsParamsSchema = z.object({
     ticker: z.string().optional().describe('종목 코드 (예: 005930)'),
     period: z.string().optional().describe('분기 (예: 2024Q3)'),
-    market: z.enum(['KOSPI', 'KOSDAQ']).optional().describe('시장 구분'),
+    market: z.enum(['KOSPI', 'KOSDAQ', 'US', 'JP', 'UK']).optional().describe('시장 구분 (KOSPI/KOSDAQ/US/JP/UK)'),
     periods: z.number().min(1).max(8).default(4).describe('최근 N분기 (기본: 4)'),
     limit: z.number().min(1).max(200).default(50).describe('결과 수'),
     offset: z.number().min(0).default(0).describe('페이지네이션 오프셋'),

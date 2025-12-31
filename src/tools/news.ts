@@ -8,7 +8,7 @@ import { callApi } from '../utils/api.js';
 // 뉴스 파라미터 스키마
 export const NewsParamsSchema = z.object({
     tag: z.string().optional().describe('태그 코드 (search_tags 결과값, 예: STK005930, THM001)'),
-    source: z.string().optional().describe('소스 필터 (예: 한경, 매경)'),
+    source: z.string().optional().describe('소스 필터 (예: 한경, 매경, WSJ, Bloomberg)'),
     search: z.string().optional().describe('제목 검색어'),
     from_date: z.string().optional().describe('시작일 (YYYY-MM-DD)'),
     to_date: z.string().optional().describe('종료일 (YYYY-MM-DD)'),
