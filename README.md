@@ -1,6 +1,12 @@
 # RagAlgo: Dynamic RAG Engine for AI Reliability
 
+[![npm version](https://badge.fury.io/js/@ragalgo%2Fmcp-server.svg)](https://www.npmjs.com/package/@ragalgo/mcp-server)
+[![GitHub stars](https://img.shields.io/github/stars/kokogo100/ragalgo-mcp-server?style=social)](https://github.com/kokogo100/ragalgo-mcp-server)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![MCP](https://img.shields.io/badge/MCP-Compatible-blue)](https://modelcontextprotocol.io)
+
 > **"Your AI is an Analyst, NOT a Day Trader."**
+
 
 RagAlgo is an **MCP Server** that provides **mathematically scored financial context** (Korean Stocks/Crypto) to AI agents.
 We focus on **"State-of-Truth"** (Daily Closed Data) to prevent AI hallucinations caused by real-time market noise.
