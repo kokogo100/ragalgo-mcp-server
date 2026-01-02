@@ -7,7 +7,7 @@ We focus on **"State-of-Truth"** (Daily Closed Data) to prevent AI hallucination
 
 - **Analyst, Not Broker:** We provide "Daily Analysis Reports" (Post-Market), not real-time tick data.
 - **Scored Context:** Instead of raw prices, we give you "Scores" (0~100) and "Zones" (Forest vs Tree).
-- **Korean Market Specialist:** Optimized for KOSPI/KOSDAQ and Upbit (Crypto).
+- **Global Market Specialist:** Optimized for US, UK, JP, KR, and Crypto.
 
 👉 **[Official Website (ragalgo.com)](https://www.ragalgo.com)**
 
@@ -17,10 +17,10 @@ We focus on **"State-of-Truth"** (Daily Closed Data) to prevent AI hallucination
 
 Discover why RagAlgo is the **"Hippocampus"** for Agentic AI, not just another RAG.
 
-*   **[Vision Whitepaper (The Hook)](./docs/RagAlgo_Whitepaper_Vision.md)**
+*   **[Vision Whitepaper (The Hook)](./docs/RagAlgo_Report_EN.md)**
     *   **Concept**: Why RagAlgo is a "Semantic Digital Twin" (SDT) using the Hippocampus analogy.
     *   **Value**: Explains the "Self-Growing Taxonomy" and "Data Flywheel" effect.
-*   **[Technical Report (The Proof)](./docs/RagAlgo_Technical_Report_Architecture.md)**
+*   **[Technical Report (The Proof)](./docs/CKN_Architecture_EN.md)**
     *   **Deep Dive**: Detailed anatomy of the Contextual Knowledge Network (CKN).
     *   **2025 Trend**: How RagAlgo serves as the memory layer for **Agentic AI** (e.g., PepsiCo/Salesforce Agentforce).
 
@@ -95,15 +95,15 @@ Please visit the **[RagAlgo Examples Repository](https://github.com/kokogo100/ra
 
 ## 🌍 Supported Markets & Roadmap
 
-RagAlgo is expanding its CKN coverage globally. Currently, the Korean market and Crypto assets are fully supported.
+RagAlgo is expanding its CKN coverage globally. Currently, **US, UK, Japan, Korea, and Crypto** markets are fully supported.
 
 | Market | Asset Class | Status |
 | :--- | :--- | :--- |
 | **🇰🇷 Korea** | KOSPI / KOSDAQ | **🟢 Live** (Real-time Sentiment & Charts) |
-| **🪙 Crypto** | Upbit / Binance | **🟢 Live** (Real-time Sentiment & Charts) |
-| **🇺🇸 USA** | NYSE / NASDAQ | **🟡 In Development** (Q1 2026) |
-| **🇯🇵 Japan** | Nikkei 225 | **🟡 In Development** (Q1 2026) |
-| **🇬🇧 UK** | LSE | **🟡 In Development** (Q1 2026) |
+| **🇺🇸 USA** | NYSE / NASDAQ | **🟢 Live** (Daily Scored Context) |
+| **🇯🇵 Japan** | Nikkei 225 | **🟢 Live** (Daily Scored Context) |
+| **🇬🇧 UK** | LSE | **🟢 Live** (Daily Scored Context) |
+| **🪙 Crypto** | Global (Upbit/Binance) | **🟢 Live** (Real-time Sentiment & Charts) |
 
 ---
 
@@ -117,8 +117,8 @@ RagAlgo is expanding its CKN coverage globally. Currently, the Korean market and
 |------|-------------|
 | `get_news_scored` | **[RECOMMENDED]** News **WITH** AI Sentiment Scores (-10 ~ +10). Filters out noise. |
 | `get_news` | **[Advanced]** Raw News **WITHOUT** scores. Includes 0-score noise. Use only if you build your own scorer. |
-| `get_chart_stock` | **[Core]** Korean Stock (KOSPI/KOSDAQ) Technical Analysis (Daily Close). |
-| `get_chart_coin` | **[Core]** Crypto (Upbit) Technical Analysis (Daily Close). |
+| `get_chart_stock` | **[Core]** Global Stock (US/UK/JP/KR) Technical Analysis (Daily Close). |
+| `get_chart_coin` | **[Core]** Global Crypto Technical Analysis (Daily Close). |
 | `get_snapshots` | **[Best]** Market Overview (News + Chart + Trend) in one call. |
 | `get_financials` | Corporate Financials (Quarterly/Yearly). |
 | `search_tags` | Convert names (e.g., "Samsung") to RagAlgo Tags. |
