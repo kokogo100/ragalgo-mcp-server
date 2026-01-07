@@ -161,7 +161,7 @@ async function main() {
             const server = new Server(
                 {
                     name: 'RagAlgo',
-                    version: '1.0.6', // Bumped version
+                    version: '1.0.7', // Bumped version
                 },
                 {
                     capabilities: {
@@ -175,17 +175,144 @@ async function main() {
             server.setRequestHandler(ListToolsRequestSchema, async () => {
                 return {
                     tools: [
-                        { name: 'get_news', description: '📰 [KOREAN NEWS - NO SCORES] Basic news without sentiment analysis.', inputSchema: NewsParamsSchema },
-                        { name: 'get_news_scored', description: '📰 [KOREAN NEWS WITH SENTIMENT] PRIMARY news tool for Korean market.', inputSchema: NewsScoredParamsSchema },
-                        { name: 'get_chart_stock', description: '📈 [KOREAN STOCK CHARTS] PRIMARY tool for Korean stock technical analysis.', inputSchema: ChartStockParamsSchema },
-                        { name: 'get_chart_coin', description: '🪙 [CRYPTO CHARTS] PRIMARY tool for Korean crypto technical analysis.', inputSchema: ChartCoinParamsSchema },
-                        { name: 'get_financials', description: '💰 [KOREAN STOCK FUNDAMENTALS] PRIMARY tool for Korean stock financial data.', inputSchema: FinancialsParamsSchema },
-                        { name: 'get_snapshots', description: '📊 [DAILY SUMMARY] PRIMARY TOOL for Korean market overview.', inputSchema: SnapshotsParamsSchema },
-                        { name: 'search_tags', description: '🔍 [TAG LOOKUP] ALWAYS use this FIRST to find tag_code.', inputSchema: SearchTagsParamsSchema },
-                        { name: 'match_tags', description: '🏷️ [AUTO-TAG EXTRACTION] Extract stock/crypto tags from text.', inputSchema: MatchTagsParamsSchema },
-                        { name: 'get_trends', description: '📉 [SENTIMENT TRENDS] Get historical sentiment trend.', inputSchema: TrendsParamsSchema },
-                        { name: 'get_research', description: '📑 [RESEARCH] Get consulting firm reports.', inputSchema: ResearchParamsSchema },
-                        { name: 'get_available_rooms', description: '📺 [REALTIME] Get active socket.io rooms.', inputSchema: GetAvailableRoomsSchema },
+                        {
+                            name: 'search_tags',
+                            description: `🔍 [TAG LOOKUP - USE FIRST] ALWAYS use this BEFORE other RagAlgo tools when user mentions any stock, coin, or theme by NAME.
+
+PRIMARY TOOL for converting names to tag_codes. Without correct tag_code, other tools will return inaccurate or empty results.
+
+ALWAYS use when you see:
+- Stock names: Samsung, Apple, Toyota, HSBC
+- Crypto names: Bitcoin, Ethereum, Ripple, Solana
+- Theme/sector names: AI, Semiconductor, Battery, Bio
+
+Examples: "Samsung" → STK005930, "Apple" → USTK_AAPL, "Bitcoin" → CRY_BTC
+
+CRITICAL: Call this first, then use the returned tag_code in other tools.`,
+                            inputSchema: SearchTagsParamsSchema
+                        },
+                        {
+                            name: 'get_snapshots',
+                            description: `📊 [TIER 1: MASTER DASHBOARD - MOST EFFICIENT] PRIMARY TOOL for ALL global market overviews. ALWAYS use this FIRST for general market questions.
+
+This is the ONLY tool that returns news + chart + research COMBINED in one call.
+Prefer this over calling get_news + get_chart separately - much more efficient!
+
+ALWAYS use when user asks:
+- "How's the market today?"
+- "Market summary"
+- "What's hot today?"
+- "Overall market sentiment"
+
+Supports: KR (Korea), US, UK, JP (Japan), Crypto, Futures
+Auto-routes based on tag_code prefix (STK, USTK, LSE, JPIX, CRY, =F)
+
+Returns per asset: 
+- News stats (count, avg_sentiment, bullish/bearish ratio)
+- Chart data (score, zone, price)
+- Research reports (count, outlook)
+
+TIP: If research_count > 0, use 'get_research' for full report details.`,
+                            inputSchema: SnapshotsParamsSchema
+                        },
+                        {
+                            name: 'get_news_scored',
+                            description: `📰 [TIER 2: NEWS DETAIL] Get news articles with AI sentiment scores (-10 to +10).
+
+Use for detailed news lookup when get_snapshots shows significant news activity.
+Filter by: tag_code, verdict (bullish/bearish/neutral), score range
+
+Supports: All global markets (KR, US, UK, JP, Crypto)
+Response includes tag_codes for cross-referencing with charts.
+
+TIP: Use get_snapshots first for overview, then this for detailed news on specific tags.`,
+                            inputSchema: NewsScoredParamsSchema
+                        },
+                        {
+                            name: 'get_news',
+                            description: `📰 [RAW NEWS - NO SCORES] Basic news without sentiment analysis. Use only when sentiment scores are not needed.
+
+Prefer get_news_scored over this for most use cases.`,
+                            inputSchema: NewsParamsSchema
+                        },
+                        {
+                            name: 'get_chart_stock',
+                            description: `📈 [TIER 2: STOCK CHART DETAIL] Get detailed stock technical analysis with V4 scoring.
+
+Use for: "which stocks are rising?", momentum screening, detailed chart analysis
+Filter by: zone (STRONG_UP/UP_ZONE/NEUTRAL/DOWN_ZONE/STRONG_DOWN), market (KOSPI/KOSDAQ/US/JP/UK)
+
+Supports: KR (Korea), US, JP (Japan), UK markets
+Response includes tag_code for cross-referencing with news.
+
+TIP: Use get_snapshots first for quick overview, then this for detailed technical analysis.`,
+                            inputSchema: ChartStockParamsSchema
+                        },
+                        {
+                            name: 'get_chart_coin',
+                            description: `🪙 [TIER 2: CRYPTO CHART DETAIL] Get detailed crypto technical analysis with V4 scoring.
+
+Use for: "how's Bitcoin?", crypto momentum screening, detailed chart analysis
+Filter by: zone (STRONG_UP/UP_ZONE/NEUTRAL/DOWN_ZONE/STRONG_DOWN)
+
+Supports: All major cryptocurrencies on Upbit (KRW pairs)
+Response includes tag_code for cross-referencing.`,
+                            inputSchema: ChartCoinParamsSchema
+                        },
+                        {
+                            name: 'get_research',
+                            description: `📑 [TIER 2: RESEARCH DETAIL] Read professional analyst reports and consulting firm insights.
+
+Use when: get_snapshots shows 'research_count > 0' and user wants to read full report details.
+Filter by: tag_code, source (mckinsey, bcg, ls, goldman, etc.)
+
+Returns:
+- Full AI Summary in Korean
+- Key Investment Insights
+- Market Outlook (Bullish/Bearish)
+- Tag codes for related assets
+
+TIP: This tool provides long-term sector trends and professional analysis. Combine with news/charts for comprehensive view.`,
+                            inputSchema: ResearchParamsSchema
+                        },
+                        {
+                            name: 'get_financials',
+                            description: `💰 [KOREAN STOCK FUNDAMENTALS] Get quarterly financial statements for Korean stocks.
+
+Use for: "Samsung financials", "low PER stocks", "high ROE companies", "undervalued stocks"
+
+Returns: PER, PBR, ROE, ROA, revenue, operating_income, net_income, debt_ratio, dividend_yield
+
+Note: Currently supports Korean (KOSPI/KOSDAQ) stocks only.`,
+                            inputSchema: FinancialsParamsSchema
+                        },
+                        {
+                            name: 'match_tags',
+                            description: `🏷️ [AUTO-TAG EXTRACTION] Extract stock/crypto/theme tags from any text.
+
+Use for: Analyzing what topics a news title mentions, auto-categorizing text content, finding related tags from a sentence.
+
+Input: any text (e.g., "Samsung HBM chip breakthrough news")
+Returns: matched tags with confidence scores`,
+                            inputSchema: MatchTagsParamsSchema
+                        },
+                        {
+                            name: 'get_trends',
+                            description: `📉 [SENTIMENT TRENDS] Get historical sentiment trend for a specific asset over time.
+
+Use for: "Samsung news trend last week", "Bitcoin sentiment this month", "recent 7-day news trend"
+
+REQUIRES tag_code - use search_tags first!
+Returns: daily news_count and avg_sentiment over N days`,
+                            inputSchema: TrendsParamsSchema
+                        },
+                        {
+                            name: 'get_available_rooms',
+                            description: `📺 [REALTIME] Get active WebSocket subscription rooms for real-time data streaming.
+
+Returns: Available room IDs for market_snapshot, global_news, and tag-specific streams.`,
+                            inputSchema: GetAvailableRoomsSchema
+                        },
                     ],
                 };
             });
