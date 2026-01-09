@@ -10,8 +10,8 @@ export const SnapshotsParamsSchema = z.object({
     tag_code: z.string().optional().describe('태그 코드 (예: STK005930)'),
     market: z.enum(['KR', 'US', 'JP', 'UK', 'UNIFIED', 'CRY', 'FUTURES']).optional().describe('시장 구분 (KR/US/JP/UK/UNIFIED/CRY/FUTURES)'),
     date: z.string().optional().describe('날짜 (YYYY-MM-DD)'),
-    days: z.number().min(1).max(30).default(7).describe('최근 N일 (기본: 7)'),
-    limit: z.number().min(1).max(100).default(50).describe('결과 수'),
+    days: z.number().min(1).default(7).describe('최근 N일 (기본: 7, 무제한)'),
+    limit: z.number().min(1).default(50).describe('결과 수 (기본: 50, 무제한)'),
     offset: z.number().min(0).default(0).describe('페이지네이션 오프셋'),
 });
 

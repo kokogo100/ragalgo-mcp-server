@@ -182,18 +182,19 @@ async function main() {
 PRIMARY TOOL for converting names to tag_codes. Without correct tag_code, other tools will return inaccurate or empty results.
 
 ALWAYS use when you see:
-- Stock names: Samsung, Apple, Toyota, HSBC
+- Stock names: Apple, Tesla, Samsung, Nvidia, Toyota
 - Crypto names: Bitcoin, Ethereum, Ripple, Solana
-- Theme/sector names: AI, Semiconductor, Battery, Bio
+- Index/Market names: S&P 500, Nasdaq, Dow Jones, Nikkei 225
+- Theme/sector names: AI, Semiconductor, EV, Bio
 
-Examples: "Samsung" → STK005930, "Apple" → USTK_AAPL, "Bitcoin" → CRY_BTC
+Examples: "Apple" → USTK_AAPL, "Samsung" → STK005930, "S&P 500" → ^GSPC
 
 CRITICAL: Call this first, then use the returned tag_code in other tools.`,
                             inputSchema: SearchTagsParamsSchema
                         },
                         {
                             name: 'get_snapshots',
-                            description: `📊 [TIER 1: MASTER DASHBOARD - MOST EFFICIENT] PRIMARY TOOL for ALL global market overviews. ALWAYS use this FIRST for general market questions.
+                            description: `📊 [TIER 1: GLOBAL MARKET DASHBOARD] PRIMARY TOOL for ALL market questions. ALWAYS use this FIRST.
 
 This is the ONLY tool that returns news + chart + research COMBINED in one call.
 Prefer this over calling get_news + get_chart separately - much more efficient!
@@ -202,10 +203,12 @@ ALWAYS use when user asks:
 - "How's the market today?"
 - "Market summary"
 - "What's hot today?"
-- "Overall market sentiment"
+- "Daily briefing"
+- "S&P 500 status"
 
-Supports: KR (Korea), US, UK, JP (Japan), Crypto, Futures
-Auto-routes based on tag_code prefix (STK, USTK, LSE, JPIX, CRY, =F)
+Supports: 
+- Markets: US (NYSE/Nasdaq), KR (Korea), UK (LSE), JP (Tokyo), Crypto, Futures
+- Auto-routes based on tag_code prefix (STK, USTK, LSE, JPIX, CRY, =F, ^)
 
 Returns per asset: 
 - News stats (count, avg_sentiment, bullish/bearish ratio)
@@ -217,12 +220,12 @@ TIP: If research_count > 0, use 'get_research' for full report details.`,
                         },
                         {
                             name: 'get_news_scored',
-                            description: `📰 [TIER 2: NEWS DETAIL] Get news articles with AI sentiment scores (-10 to +10).
+                            description: `📰 [TIER 2: NEWS DETAIL] Get global news articles with AI sentiment scores (-10 to +10).
 
 Use for detailed news lookup when get_snapshots shows significant news activity.
 Filter by: tag_code, verdict (bullish/bearish/neutral), score range
 
-Supports: All global markets (KR, US, UK, JP, Crypto)
+Supports: All global markets (US, KR, UK, JP, Crypto)
 Response includes tag_codes for cross-referencing with charts.
 
 TIP: Use get_snapshots first for overview, then this for detailed news on specific tags.`,
@@ -237,12 +240,12 @@ Prefer get_news_scored over this for most use cases.`,
                         },
                         {
                             name: 'get_chart_stock',
-                            description: `📈 [TIER 2: STOCK CHART DETAIL] Get detailed stock technical analysis with V4 scoring.
+                            description: `📈 [TIER 2: STOCK CHART DETAIL] Get detailed technical analysis with V4 scoring.
 
 Use for: "which stocks are rising?", momentum screening, detailed chart analysis
-Filter by: zone (STRONG_UP/UP_ZONE/NEUTRAL/DOWN_ZONE/STRONG_DOWN), market (KOSPI/KOSDAQ/US/JP/UK)
+Filter by: zone (STRONG_UP/UP_ZONE/NEUTRAL/DOWN_ZONE/STRONG_DOWN), market (US/KR/JP/UK)
 
-Supports: KR (Korea), US, JP (Japan), UK markets
+Supports: US, KR, JP, UK markets
 Response includes tag_code for cross-referencing with news.
 
 TIP: Use get_snapshots first for quick overview, then this for detailed technical analysis.`,
@@ -255,35 +258,39 @@ TIP: Use get_snapshots first for quick overview, then this for detailed technica
 Use for: "how's Bitcoin?", crypto momentum screening, detailed chart analysis
 Filter by: zone (STRONG_UP/UP_ZONE/NEUTRAL/DOWN_ZONE/STRONG_DOWN)
 
-Supports: All major cryptocurrencies on Upbit (KRW pairs)
+Supports: All major cryptocurrencies (KRW pairs)
 Response includes tag_code for cross-referencing.`,
                             inputSchema: ChartCoinParamsSchema
                         },
                         {
                             name: 'get_research',
-                            description: `📑 [TIER 2: RESEARCH DETAIL] Read professional analyst reports and consulting firm insights.
+                            description: `📑 [TIER 2: RESEARCH DETAIL] Get professional analyst reports and key insights.
 
-Use when: get_snapshots shows 'research_count > 0' and user wants to read full report details.
-Filter by: tag_code, source (mckinsey, bcg, ls, goldman, etc.)
+Use when: 
+- get_snapshots shows 'research_count > 0'
+- User asks for: "market outlook", "sector analysis", "future trends", "investment insights"
+- Questions about: "AI Industry outlook", "Semiconductor Cycle"
+
+Filter by: tag_code, source (mckinsey, goldman, etc.)
 
 Returns:
-- Full AI Summary in Korean
+- Full AI Summary
 - Key Investment Insights
 - Market Outlook (Bullish/Bearish)
 - Tag codes for related assets
 
-TIP: This tool provides long-term sector trends and professional analysis. Combine with news/charts for comprehensive view.`,
+TIP: This tool provides *LONG-TERM* sector trends and professional analysis. Combine with news/charts for comprehensive view.`,
                             inputSchema: ResearchParamsSchema
                         },
                         {
                             name: 'get_financials',
-                            description: `💰 [KOREAN STOCK FUNDAMENTALS] Get quarterly financial statements for Korean stocks.
+                            description: `💰 [STOCK FUNDAMENTALS] Get quarterly financial statements.
 
 Use for: "Samsung financials", "low PER stocks", "high ROE companies", "undervalued stocks"
 
 Returns: PER, PBR, ROE, ROA, revenue, operating_income, net_income, debt_ratio, dividend_yield
 
-Note: Currently supports Korean (KOSPI/KOSDAQ) stocks only.`,
+Note: Currently supports KOREAN stocks only.`,
                             inputSchema: FinancialsParamsSchema
                         },
                         {
@@ -292,7 +299,7 @@ Note: Currently supports Korean (KOSPI/KOSDAQ) stocks only.`,
 
 Use for: Analyzing what topics a news title mentions, auto-categorizing text content, finding related tags from a sentence.
 
-Input: any text (e.g., "Samsung HBM chip breakthrough news")
+Input: any text (e.g., "Nvidia HBM chip breakthrough news")
 Returns: matched tags with confidence scores`,
                             inputSchema: MatchTagsParamsSchema
                         },
