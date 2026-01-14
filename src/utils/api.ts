@@ -43,6 +43,9 @@ export async function callApi<T>(
 
     if (!response.ok) {
         const error = await response.text();
+        if (response.status === 429) {
+            throw new Error(`[RATE LIMIT EXCEEDED] API 요청 제한에 도달했습니다. 잠시 후 다시 시도하거나 요청량을 줄여주세요. (Plan Quota Exceeded)`);
+        }
         throw new Error(`API 호출 실패: ${response.status} - ${error}`);
     }
 
@@ -69,6 +72,9 @@ export async function callApiPost<T>(
 
     if (!response.ok) {
         const error = await response.text();
+        if (response.status === 429) {
+            throw new Error(`[RATE LIMIT EXCEEDED] API 요청 제한에 도달했습니다. 잠시 후 다시 시도하거나 요청량을 줄여주세요. (Plan Quota Exceeded)`);
+        }
         throw new Error(`API 호출 실패: ${response.status} - ${error}`);
     }
 
