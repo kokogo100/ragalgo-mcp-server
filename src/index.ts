@@ -25,6 +25,7 @@ import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
 import { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import { JSONRPCMessage } from '@modelcontextprotocol/sdk/types.js';
+import { zodToJsonSchema } from 'zod-to-json-schema';
 
 // ------------------------------------------------------------------------------------------------
 // 🛠️ SMITHERY & DEPLOYMENT BEST PRACTICES FIX
@@ -161,7 +162,7 @@ async function main() {
             const server = new Server(
                 {
                     name: 'RagAlgo',
-                    version: '1.0.7', // Bumped version
+                    version: '1.0.7',
                 },
                 {
                     capabilities: {
@@ -170,8 +171,6 @@ async function main() {
                 }
             );
 
-            // Register Tools (Same as before)
-            // Register Tools
             server.setRequestHandler(ListToolsRequestSchema, async () => {
                 return {
                     tools: [
@@ -181,7 +180,7 @@ async function main() {
 
 PRIMARY TOOL for converting names to tag_codes. Without correct tag_code, other tools will return inaccurate or empty results.
 
-ALWAYS use when you see:
+ALWAYS use when user asks:
 - Stock names: Apple, Tesla, Samsung, Nvidia, Toyota
 - Crypto names: Bitcoin, Ethereum, Ripple, Solana
 - Index/Market names: S&P 500, Nasdaq, Dow Jones, Nikkei 225
@@ -190,7 +189,7 @@ ALWAYS use when you see:
 Examples: "Apple" → USTK_AAPL, "Samsung" → STK005930, "S&P 500" → ^GSPC
 
 CRITICAL: Call this first, then use the returned tag_code in other tools.`,
-                            inputSchema: SearchTagsParamsSchema
+                            inputSchema: zodToJsonSchema(SearchTagsParamsSchema) as any
                         },
                         {
                             name: 'get_snapshots',
@@ -216,7 +215,7 @@ Returns per asset:
 - Research reports (count, outlook)
 
 TIP: If research_count > 0, use 'get_research' for full report details.`,
-                            inputSchema: SnapshotsParamsSchema
+                            inputSchema: zodToJsonSchema(SnapshotsParamsSchema) as any
                         },
                         {
                             name: 'get_news_scored',
@@ -229,14 +228,14 @@ Supports: All global markets (US, KR, UK, JP, Crypto)
 Response includes tag_codes for cross-referencing with charts.
 
 TIP: Use get_snapshots first for overview, then this for detailed news on specific tags.`,
-                            inputSchema: NewsScoredParamsSchema
+                            inputSchema: zodToJsonSchema(NewsScoredParamsSchema) as any
                         },
                         {
                             name: 'get_news',
                             description: `📰 [RAW NEWS - NO SCORES] Basic news without sentiment analysis. Use only when sentiment scores are not needed.
 
 Prefer get_news_scored over this for most use cases.`,
-                            inputSchema: NewsParamsSchema
+                            inputSchema: zodToJsonSchema(NewsParamsSchema) as any
                         },
                         {
                             name: 'get_chart_stock',
@@ -249,7 +248,7 @@ Supports: US, KR, JP, UK markets
 Response includes tag_code for cross-referencing with news.
 
 TIP: Use get_snapshots first for quick overview, then this for detailed technical analysis.`,
-                            inputSchema: ChartStockParamsSchema
+                            inputSchema: zodToJsonSchema(ChartStockParamsSchema) as any
                         },
                         {
                             name: 'get_chart_coin',
@@ -260,7 +259,7 @@ Filter by: zone (STRONG_UP/UP_ZONE/NEUTRAL/DOWN_ZONE/STRONG_DOWN)
 
 Supports: All major cryptocurrencies (KRW pairs)
 Response includes tag_code for cross-referencing.`,
-                            inputSchema: ChartCoinParamsSchema
+                            inputSchema: zodToJsonSchema(ChartCoinParamsSchema) as any
                         },
                         {
                             name: 'get_research',
@@ -280,7 +279,7 @@ Returns:
 - Tag codes for related assets
 
 TIP: This tool provides *LONG-TERM* sector trends and professional analysis. Combine with news/charts for comprehensive view.`,
-                            inputSchema: ResearchParamsSchema
+                            inputSchema: zodToJsonSchema(ResearchParamsSchema) as any
                         },
                         {
                             name: 'get_financials',
@@ -291,7 +290,7 @@ Use for: "Samsung financials", "low PER stocks", "high ROE companies", "underval
 Returns: PER, PBR, ROE, ROA, revenue, operating_income, net_income, debt_ratio, dividend_yield
 
 Note: Currently supports KOREAN stocks only.`,
-                            inputSchema: FinancialsParamsSchema
+                            inputSchema: zodToJsonSchema(FinancialsParamsSchema) as any
                         },
                         {
                             name: 'match_tags',
@@ -301,7 +300,10 @@ Use for: Analyzing what topics a news title mentions, auto-categorizing text con
 
 Input: any text (e.g., "Nvidia HBM chip breakthrough news")
 Returns: matched tags with confidence scores`,
-                            inputSchema: MatchTagsParamsSchema
+                            inputSchema: zodToJsonSchema(MatchTagsParamsSchema) as any
+                        },
+                        {
+                            inputSchema: zodToJsonSchema(MatchTagsParamsSchema) as any
                         },
                         {
                             name: 'get_trends',
@@ -311,14 +313,14 @@ Use for: "Samsung news trend last week", "Bitcoin sentiment this month", "recent
 
 REQUIRES tag_code - use search_tags first!
 Returns: daily news_count and avg_sentiment over N days`,
-                            inputSchema: TrendsParamsSchema
+                            inputSchema: zodToJsonSchema(TrendsParamsSchema) as any
                         },
                         {
                             name: 'get_available_rooms',
                             description: `📺 [REALTIME] Get active WebSocket subscription rooms for real-time data streaming.
 
 Returns: Available room IDs for market_snapshot, global_news, and tag-specific streams.`,
-                            inputSchema: GetAvailableRoomsSchema
+                            inputSchema: zodToJsonSchema(GetAvailableRoomsSchema) as any
                         },
                     ],
                 };
@@ -348,6 +350,7 @@ Returns: Available room IDs for market_snapshot, global_news, and tag-specific s
                     return { content: [{ type: 'text', text: `Error: ${errorMessage}` }], isError: true };
                 }
             });
+
             return server;
         };
 
