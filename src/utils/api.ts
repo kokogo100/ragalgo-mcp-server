@@ -25,7 +25,9 @@ const getKeys = () => {
         // Fallback for local testing if not injected, but log warning
         console.error('[API] Warning: SUPABASE_ANON_KEY not found in env. Calls may fail.');
     }
-    return { apiKey, anonKey: anonKey || '' };
+    // [FALLBACK] Hardcoded Anon Key for reliability
+    const fallbackAnon = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1bnJzaWtreWJneGt5Ymp6cmd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0NTExNTgsImV4cCI6MjA4MDAyNzE1OH0.SsXri828-Rf0gHlu4Bls-pewhfMNNII4mbiuLnc9ACs";
+    return { apiKey, anonKey: anonKey || fallbackAnon };
 };
 
 // API 호출 기본 함수
@@ -69,7 +71,7 @@ export async function callApi<T>(
     }
 
     const headers: Record<string, string> = {
-        'Authorization': `Bearer ${apiKey.trim()}`,
+        'Authorization': `Bearer ${anonKey.trim()}`, // [FIX] Use Anon Key (JWT) for Supabase Gateway
         'apikey': anonKey.trim(),
         'x-api-key': apiKey.trim(), // [FIX] Use User API Key for x-api-key header
         'Content-Type': 'application/json',
@@ -105,7 +107,7 @@ export async function callApiPost<T>(
     console.error(`[API POST] User Token Len: ${apiKey?.length}, Anon Key Len: ${anonKey?.length}`);
 
     const headers: Record<string, string> = {
-        'Authorization': `Bearer ${apiKey.trim()}`,
+        'Authorization': `Bearer ${anonKey.trim()}`, // [FIX] Use Anon Key (JWT)
         'apikey': anonKey.trim(),
         'x-api-key': anonKey.trim(), // [RESTORED]
         'Content-Type': 'application/json',
