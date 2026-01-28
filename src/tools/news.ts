@@ -12,24 +12,32 @@ export const NewsParamsSchema = z.object({
     search: z.string().optional().describe('제목 검색어'),
     from_date: z.string().optional().describe('시작일 (YYYY-MM-DD)'),
     to_date: z.string().optional().describe('종료일 (YYYY-MM-DD)'),
+    start_date: z.string().optional().describe('시작일 (from_date의 별칭)'), // [FIX] LLM Alias support
+    end_date: z.string().optional().describe('종료일 (to_date의 별칭)'),     // [FIX] LLM Alias support
     limit: z.number().min(1).max(100).default(20).describe('결과 수 (기본: 20, 최대: 100)'),
     offset: z.number().min(0).default(0).describe('페이지네이션 오프셋'),
-}).strict();
+}); // [MOD] Removed .strict()
 
 // 점수 포함 뉴스 파라미터 스키마
 export const NewsScoredParamsSchema = NewsParamsSchema.extend({
     min_score: z.number().min(-10).max(10).optional().describe('최소 감정 점수 (-10~10)'),
     max_score: z.number().min(-10).max(10).optional().describe('최대 감정 점수 (-10~10)'),
     verdict: z.enum(['bullish', 'bearish', 'neutral']).optional().describe('판정 필터'),
-}).strict();
+    market: z.string().optional().describe('시장 필터 (KR, US 등) - 호환성 유지용'), // [FIX] LLM Compatibility
+}); // [MOD] Removed .strict()
 
 export type NewsParams = z.infer<typeof NewsParamsSchema>;
 export type NewsScoredParams = z.infer<typeof NewsScoredParamsSchema>;
 
 // 뉴스 조회 (점수 제외)
 export async function getNews(params: NewsParams) {
-    const { tag_code, ...rest } = params;
-    const apiParams = { ...rest, tag: tag_code };
+    console.error(`[getNews] Params: ${JSON.stringify(params)}`); // [DEBUG]
+    const { tag_code, start_date, end_date, ...rest } = params;
+
+    // [FIX] Handle Aliases
+    const apiParams: any = { ...rest, tag: tag_code };
+    if (start_date && !apiParams.from_date) apiParams.from_date = start_date;
+    if (end_date && !apiParams.to_date) apiParams.to_date = end_date;
 
     const result = await callApi<{
         success: boolean;
@@ -50,9 +58,13 @@ export async function getNews(params: NewsParams) {
 
 // 뉴스 조회 (점수 포함)
 export async function getNewsScored(params: NewsScoredParams) {
-    const { tag_code, ...rest } = params;
-    const apiParams = { ...rest, tag: tag_code };
+    console.error(`[getNewsScored] Params: ${JSON.stringify(params)}`); // [DEBUG]
+    const { tag_code, start_date, end_date, ...rest } = params; // [FIXED] Include 'market' in API call by not destructuring it from rest (it's inside rest now or handled by type)
 
+    // [FIX] Handle Aliases
+    const apiParams: any = { ...rest, tag: tag_code };
+    if (start_date && !apiParams.from_date) apiParams.from_date = start_date;
+    if (end_date && !apiParams.to_date) apiParams.to_date = end_date;
 
     const result = await callApi<{
         success: boolean;

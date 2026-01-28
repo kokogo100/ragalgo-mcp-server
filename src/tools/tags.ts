@@ -7,7 +7,8 @@ import { callApi, callApiPost } from '../utils/api.js';
 
 // 태그 검색 파라미터 스키마
 export const TagsSearchParamsSchema = z.object({
-    q: z.string().describe('검색어 (예: 삼성, 반도체)'),
+    q: z.string().describe('검색어 (예: 삼성, 반도체)').optional(),
+    query: z.string().optional().describe('검색어 alias'), // [FIX] LLM often sends 'query'
     type: z.enum(['STOCK', 'SECTOR', 'THEME', 'CRYPTO']).optional().describe('태그 타입'),
     limit: z.number().min(1).max(50).default(20).describe('결과 수'),
 });
@@ -25,8 +26,20 @@ export type TagsMatchParams = z.infer<typeof TagsMatchParamsSchema>;
 export const SearchTagsParamsSchema = TagsSearchParamsSchema;
 export const MatchTagsParamsSchema = TagsMatchParamsSchema;
 
+
 // 태그 검색
-export async function searchTags(params: TagsSearchParams) {
+export async function searchTags(params: TagsSearchParams & { query?: string }) {
+    // [FIX] Alias mapping: query -> q
+    if (!params.q && params.query) {
+        params.q = params.query;
+    }
+
+    if (!params.q) {
+        throw new Error("검색어(q 또는 query)가 필요합니다.");
+    }
+
+    const { query, ...apiParams } = params; // Remove 'query' alias from API call
+
     const result = await callApi<{
         success: boolean;
         data: Array<{
@@ -38,7 +51,7 @@ export async function searchTags(params: TagsSearchParams) {
             usage_count: number;
         }>;
         meta: { query: string; count: number };
-    }>('tags/search', params);
+    }>('tags/search', apiParams as any);
 
     return result;
 }
