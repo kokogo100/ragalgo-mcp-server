@@ -86,26 +86,7 @@ Use RagAlgo to build **"Investment Advisors"**, not "High-Frequency Trading Bots
 
 ## 🚀 Quick Start
 
-### Option 1: NPM Package (Recommended for Claude Desktop)
-
-```bash
-# Run immediately without installation (Requires API Key)
-npx -y ragalgo-mcp-server --stdio
-```
-
-### Option 2: Railway URL (No Node.js Required)
-
-```json
-{
-  "mcpServers": {
-    "ragalgo": {
-      "url": "https://ragalgo-mcp-server-production.up.railway.app/sse"
-    }
-  }
-}
-```
-
-### Claude Desktop Configuration (NPM Method)
+### Claude Desktop Configuration
 
 Add this to your config file:
 - **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
@@ -123,6 +104,11 @@ Add this to your config file:
     }
   }
 }
+```
+
+Or run directly in terminal:
+```bash
+npx -y ragalgo-mcp-server --stdio
 ```
 
 > **Tip:** You can get a **Free 1,000 Call Key** instantly at [RagAlgo Dashboard](https://www.ragalgo.com/dashboard).
