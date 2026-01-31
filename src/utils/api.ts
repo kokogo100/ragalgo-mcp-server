@@ -4,6 +4,60 @@
  */
 
 
+// ============================================================================
+// [CACHE] 5분 메모리 캐시 - Supabase 비용 절감
+// ============================================================================
+interface CacheEntry<T> {
+    data: T;
+    timestamp: number;
+}
+
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5분
+const cache = new Map<string, CacheEntry<unknown>>();
+
+function getCacheKey(endpoint: string, params?: Record<string, string | number | undefined>): string {
+    const sortedParams = params
+        ? Object.entries(params)
+            .filter(([, v]) => v !== undefined)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([k, v]) => `${k}=${v}`)
+            .join('&')
+        : '';
+    return `${endpoint}?${sortedParams}`;
+}
+
+function getFromCache<T>(key: string): T | null {
+    const entry = cache.get(key);
+    if (!entry) return null;
+
+    const now = Date.now();
+    if (now - entry.timestamp > CACHE_TTL_MS) {
+        cache.delete(key);
+        return null;
+    }
+
+    return entry.data as T;
+}
+
+function setCache<T>(key: string, data: T): void {
+    // 캐시 크기 제한 (최대 100개)
+    if (cache.size > 100) {
+        const oldestKey = cache.keys().next().value;
+        if (oldestKey) cache.delete(oldestKey);
+    }
+
+    cache.set(key, {
+        data,
+        timestamp: Date.now()
+    });
+}
+
+// 캐시 통계 (디버그용)
+let cacheHits = 0;
+let cacheMisses = 0;
+
+// ============================================================================
+
 // [CHANGED] Dynamic URL Support
 // If SUPABASE_URL is injected (from Desktop .env), use it. Otherwise fallback to hardcoded (Public default).
 const DEFAULT_URL = 'https://xunrsikkybgxkybjzrgz.supabase.co/functions/v1';
@@ -30,37 +84,26 @@ const getKeys = () => {
     return { apiKey, anonKey: anonKey || fallbackAnon };
 };
 
-// API 호출 기본 함수
+// API 호출 기본 함수 (5분 캐시 적용)
 export async function callApi<T>(
     endpoint: string,
     params?: Record<string, string | number | undefined>
 ): Promise<T> {
+    // [CACHE] 캐시 확인
+    const cacheKey = getCacheKey(endpoint, params);
+    const cachedData = getFromCache<T>(cacheKey);
+
+    if (cachedData !== null) {
+        cacheHits++;
+        console.error(`[CACHE HIT] ${endpoint} (hits: ${cacheHits}, misses: ${cacheMisses})`);
+        return cachedData;
+    }
+
+    cacheMisses++;
+    console.error(`[CACHE MISS] ${endpoint} (hits: ${cacheHits}, misses: ${cacheMisses})`);
+
     const { apiKey, anonKey } = getKeys();
 
-    // [DEBUG] Log token details to stderr
-    // console.error(`[API] User Token Len: ${apiKey?.length}, Anon Key Len: ${anonKey?.length}`);
-
-    // 쿼리 파라미터 생성
-    // Use constructed SUPABASE_URL which already includes /functions/v1/ or similar base
-    // But wait, the DEFAULT_URL includes /functions/v1
-    // The previous code did: new URL(`${SUPABASE_URL}/${endpoint}`);
-    // If process.env.SUPABASE_URL is just the base (e.g. https://...co), we need to append /functions/v1
-
-    // Adjusted Logic above: 
-    // If process.env.SUPABASE_URL is provided, we assume it is the PROJECT URL (not including /functions/v1).
-    // So we append /functions/v1.
-
-    // Ensure we don't duplicate slashes
-    const baseUrl = SUPABASE_URL.endsWith('/functions/v1') ? SUPABASE_URL : `${SUPABASE_URL}/functions/v1`;
-
-    // Actually, let's simplify.
-    // The previous code had `const SUPABASE_URL = '.../functions/v1';`
-    // And usage: `new URL(`${SUPABASE_URL}/${endpoint}`);` which results in `.../functions/v1/snapshots`
-
-    // My replacement above: 
-    // const SUPABASE_URL = ... (process.env.SUPABASE_URL ? .../functions/v1 :)
-
-    // So usage here:
     const url = new URL(`${SUPABASE_URL}/${endpoint}`);
     if (params) {
         Object.entries(params).forEach(([key, value]) => {
@@ -71,9 +114,9 @@ export async function callApi<T>(
     }
 
     const headers: Record<string, string> = {
-        'Authorization': `Bearer ${anonKey.trim()}`, // [FIX] Use Anon Key (JWT) for Supabase Gateway
+        'Authorization': `Bearer ${anonKey.trim()}`,
         'apikey': anonKey.trim(),
-        'x-api-key': apiKey.trim(), // [FIX] Use User API Key for x-api-key header
+        'x-api-key': apiKey.trim(),
         'Content-Type': 'application/json',
     };
 
@@ -92,10 +135,15 @@ export async function callApi<T>(
         throw new Error(`API 호출 실패: ${response.status} - ${error} | ${debugInfo}`);
     }
 
-    return response.json();
+    const data = await response.json() as T;
+
+    // [CACHE] 성공 시 캐시에 저장
+    setCache(cacheKey, data);
+
+    return data;
 }
 
-// POST API 호출
+// POST API 호출 (POST는 캐시하지 않음 - 데이터 변경 가능성)
 export async function callApiPost<T>(
     endpoint: string,
     body: Record<string, unknown>
@@ -103,13 +151,10 @@ export async function callApiPost<T>(
     const { apiKey, anonKey } = getKeys();
     const url = `${SUPABASE_URL}/${endpoint}`;
 
-    // [DEBUG]
-    console.error(`[API POST] User Token Len: ${apiKey?.length}, Anon Key Len: ${anonKey?.length}`);
-
     const headers: Record<string, string> = {
-        'Authorization': `Bearer ${anonKey.trim()}`, // [FIX] Use Anon Key (JWT)
+        'Authorization': `Bearer ${anonKey.trim()}`,
         'apikey': anonKey.trim(),
-        'x-api-key': anonKey.trim(), // [RESTORED]
+        'x-api-key': apiKey.trim(), // [FIX] anonKey → apiKey 수정
         'Content-Type': 'application/json',
     };
 
