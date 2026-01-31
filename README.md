@@ -1,6 +1,6 @@
 # RagAlgo: Dynamic RAG Engine for AI Reliability
 
-[![npm version](https://badge.fury.io/js/@ragalgo%2Fmcp-server.svg)](https://www.npmjs.com/package/@ragalgo/mcp-server)
+[![npm version](https://badge.fury.io/js/ragalgo-mcp-server.svg)](https://www.npmjs.com/package/ragalgo-mcp-server)
 [![GitHub stars](https://img.shields.io/github/stars/kokogo100/ragalgo-mcp-server?style=social)](https://github.com/kokogo100/ragalgo-mcp-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-blue)](https://modelcontextprotocol.io)
@@ -22,6 +22,41 @@ We focus on **"State-of-Truth"** (Daily Closed Data) to prevent AI hallucination
 ## 📖 Architecture & Whitepaper
 
 Discover why RagAlgo is the **"Hippocampus"** for Agentic AI, not just another RAG.
+
+### 🏗️ Data Pipeline Architecture
+
+Our production system on Railway processes global financial data 24/7:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        RagAlgo Data Pipeline (Railway)                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  📥 COLLECT              🔍 FILTER              🏷️ TAG           📊 SCORE  │
+│  ─────────────          ──────────────         ─────────        ──────────  │
+│  • KR-News-Collector    • filter-worker-1      • tag-worker     • Gemini-1  │
+│  • US-News-Collector    • filter-worker-2      • Meta-Hierarchy • Gemini-2  │
+│  • UK-News-Collector    • filter-worker-3      •   Worker       • ...       │
+│  • JP-News-Collector    • ibkr_filter_worker3  │                • Gemini-7  │
+│  • research-collector   │                      │                │           │
+│                         │                      │                │           │
+│  ════════════════════════════════════════════════════════════════════════  │
+│                                    ↓                                        │
+│                      📦 SNAPSHOT (Daily 18:00 KST)                          │
+│                      ──────────────────────────────                         │
+│                      • KR-Snapshot  • US-Snapshot                           │
+│                      • UK-Snapshot  • JP-Snapshot                           │
+│                      • CRY-Snapshot • Unified-Snapshot                      │
+│                                    ↓                                        │
+│                          🚀 SERVE (MCP Server)                              │
+│                          ─────────────────────                              │
+│                          • RagAlgo-Service (SSE/stdio)                      │
+│                          • ragalgo-relay-server (WebSocket)                 │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+![RagAlgo Architecture](./architecture.png)
 
 *   **[Vision Whitepaper (The Hook)](./docs/RagAlgo_Report_EN.md)**
     *   **Concept**: Why RagAlgo is a "Semantic Digital Twin" (SDT) using the Hippocampus analogy.
@@ -50,14 +85,26 @@ Use RagAlgo to build **"Investment Advisors"**, not "High-Frequency Trading Bots
 
 ## 🚀 Quick Start
 
-### 1. Direct Run (npx)
+### Option 1: NPM Package (Recommended for Claude Desktop)
 
 ```bash
 # Run immediately without installation (Requires API Key)
-npx -y @ragalgo/server
+npx -y ragalgo-mcp-server --stdio
 ```
 
-### 2. Claude Desktop Configuration
+### Option 2: Railway URL (No Node.js Required)
+
+```json
+{
+  "mcpServers": {
+    "ragalgo": {
+      "url": "https://ragalgo-mcp-server-production.up.railway.app/sse"
+    }
+  }
+}
+```
+
+### Claude Desktop Configuration (NPM Method)
 
 Add this to your config file:
 - **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
@@ -68,7 +115,7 @@ Add this to your config file:
   "mcpServers": {
     "ragalgo": {
       "command": "npx",
-      "args": ["-y", "@ragalgo/server", "--stdio"],
+      "args": ["-y", "ragalgo-mcp-server", "--stdio"],
       "env": {
         "RAGALGO_API_KEY": "YOUR_API_KEY_HERE"
       }
