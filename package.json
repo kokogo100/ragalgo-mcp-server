@@ -1,6 +1,6 @@
 {
     "name": "ragalgo-mcp-server",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "mcpName": "io.github.kokogo100/ragalgo",
     "files": [
         "dist",
