@@ -1,6 +1,7 @@
 # RagAlgo: Dynamic RAG Engine for AI Reliability
 
-[![npm version](https://badge.fury.io/js/ragalgo-mcp-server.svg)](https://www.npmjs.com/package/ragalgo-mcp-server)
+[![npm version](https://img.shields.io/npm/v/ragalgo-mcp-server.svg)](https://www.npmjs.com/package/ragalgo-mcp-server)
+[![npm downloads](https://img.shields.io/npm/dm/ragalgo-mcp-server.svg)](https://www.npmjs.com/package/ragalgo-mcp-server)
 [![GitHub stars](https://img.shields.io/github/stars/kokogo100/ragalgo-mcp-server?style=social)](https://github.com/kokogo100/ragalgo-mcp-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MCP](https://img.shields.io/badge/MCP-Compatible-blue)](https://modelcontextprotocol.io)
