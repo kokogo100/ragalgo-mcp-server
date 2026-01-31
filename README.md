@@ -92,6 +92,21 @@ Add this to your config file:
 - **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 - **Mac:** `~/Library/Application Support/Claude/claude_desktop_config.json`
 
+#### ☁️ Cloud Mode (Recommended - No installation required)
+```json
+{
+  "mcpServers": {
+    "ragalgo": {
+      "url": "https://ragalgo-service-production.up.railway.app/sse",
+      "env": {
+        "RAGALGO_API_KEY": "YOUR_API_KEY_HERE"
+      }
+    }
+  }
+}
+```
+
+#### 📦 Local Mode (Requires Node.js)
 ```json
 {
   "mcpServers": {
@@ -104,11 +119,6 @@ Add this to your config file:
     }
   }
 }
-```
-
-Or run directly in terminal:
-```bash
-npx -y ragalgo-mcp-server --stdio
 ```
 
 > **Tip:** You can get a **Free 1,000 Call Key** instantly at [RagAlgo Dashboard](https://www.ragalgo.com/dashboard).
