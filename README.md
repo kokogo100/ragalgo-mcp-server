@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/kokogo100-ragalgo-mcp-server-badge.png)](https://mseep.ai/app/kokogo100-ragalgo-mcp-server)
+
 # RagAlgo: Dynamic RAG Engine for AI Reliability
 
 [![npm version](https://img.shields.io/npm/v/ragalgo-mcp-server.svg)](https://www.npmjs.com/package/ragalgo-mcp-server)
