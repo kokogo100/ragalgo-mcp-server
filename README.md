@@ -1,3 +1,11 @@
+> [!WARNING]
+> ### ⚠️ 서비스 종료 안내 (Service Discontinued)
+> - **RagAlgo (agalgo.com) 및 AlgoBalloon (lgoballoon.com) 뉴스 수집·데이터 제공 서비스는 공식 종료(Discontinued)되었습니다.**
+> - 본 저장소는 오픈소스 아키텍처 참고용 아카이브로만 보존되며, 클라우드 API/웹소켓 엔드포인트는 더 이상 운영되지 않습니다.
+> - *Notice: The RagAlgo (agalgo.com) and AlgoBalloon (lgoballoon.com) news collection & financial context services have been permanently discontinued. This repository is preserved as a read-only archive.*
+> - **운영사 홈페이지 (Official Website)**: **[AXNli Inc. (https://axnli.com)](https://axnli.com)**
+
+---
 # RagAlgo: Dynamic RAG Engine for AI Reliability
 
 [![npm version](https://img.shields.io/npm/v/ragalgo-mcp-server.svg)](https://www.npmjs.com/package/ragalgo-mcp-server)
@@ -16,7 +24,7 @@ We focus on **"State-of-Truth"** (Daily Closed Data) to prevent AI hallucination
 - **Scored Context:** Instead of raw prices, we give you "Scores" (0~100) and "Zones" (Forest vs Tree).
 - **Global Market Specialist:** Optimized for US, UK, JP, KR, and Crypto.
 
-👉 **[Official Website (ragalgo.com)](https://www.ragalgo.com)**
+👉 **Official Website: [AXNli Inc. (https://axnli.com)](https://axnli.com)** *(기존 agalgo.com · lgoballoon.com 서비스 종료 / Discontinued)*
 
 ---
 
@@ -188,5 +196,5 @@ For users who *really* need live data (e.g., for monitoring dashboards), we offe
 
 ## 💬 Support
 
-- **Website:** [ragalgo.com](https://www.ragalgo.com)
+- **Website:** [AXNli Inc. (https://axnli.com)](https://axnli.com) *(기존 agalgo.com 서비스 종료 / Discontinued)*
 - **Email:** support@ragalgo.com
